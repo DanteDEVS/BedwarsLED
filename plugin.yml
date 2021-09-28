@@ -1,0 +1,6 @@
+name: BedWars Led
+version: 1.0.0
+api: 3.x.x
+main: BedWars\BedWars
+author: dctxdev
+
