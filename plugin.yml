@@ -4,6 +4,4 @@ api: 3.x.x
 main: BedWars\BedWars
 author: dctxdev
 description: a simple bedwars plugin
-depends:
-FormAPI
 
