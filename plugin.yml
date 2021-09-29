@@ -2,6 +2,7 @@ name: BedWars Led
 version: 1.0.0
 api: 3.x.x
 main: BedWars\BedWars
-author: dctxdev
+author: dctxdev & dantedevs
 description: a simple bedwars plugin
+
 
