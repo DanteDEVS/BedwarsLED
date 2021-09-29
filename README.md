@@ -8,3 +8,6 @@ CHANGED GAMELISTNER
 TRYED TO CHANGE UI TO GUI (TEST)
 ADDED NEW BUGS
 ------------------------------------------------------------
+# BEDWARS
+SO IM GONNA MAKE A HUGE CHANGE 
+TO EVERYTHING 
