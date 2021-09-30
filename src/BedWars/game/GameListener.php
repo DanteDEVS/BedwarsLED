@@ -469,7 +469,7 @@ class GameListener implements Listener
 						}
 
 						if ($npcType == "upgrade") {
-					             //this is upgrade
+					            UpgradeShop::sendDefaultShop($damager);  
 						} else {
 					             $this->shopWindows($damager);
 						}
