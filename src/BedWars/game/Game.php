@@ -224,6 +224,14 @@ class Game
 		$player->setAllowFlight(false);
 		$player->setHealth(20);
 		$player->setFood(20);
+		$player->sendMessage("§a----------------------------
+                            \n§c§lBed§l§fWars : 
+                            \n§e§lProtect your bed and destroy the enemy beds
+                            \nUpgrade yourself and your team by collecting
+                            \nIron , Gold , Emerald and Diamond from the generators 
+                            \nto access powerful upgrade 
+                            \n§a----------------------------\n
+                            §c§lCross-Teaming with other teams is not allowed on this game.
 		$a = 0;
 		$items = array_fill(0, count($this->teams), Item::get(Item::WOOL));
 		foreach ($this->teams as $team) {
@@ -467,7 +475,7 @@ class Game
 					Scoreboard::setLine($player, 6, "   ");
 					Scoreboard::setLine($player, 7, " " . TextFormat::WHITE . "Mode: " . TextFormat::GREEN . substr(str_repeat($this->playersPerTeam . "v", count($this->teams)), 0, -1) . str_repeat(" ", 3));
 					Scoreboard::setLine($player, 8, "    ");
-					Scoreboard::setLine($player, 9, " " . TextFormat::YELLOW . "Rede Hyper     ");
+					Scoreboard::setLine($player, 9, " " . TextFormat::YELLOW . "§eurservername.net");
 				}
 
 				break;
@@ -555,9 +563,10 @@ class Game
 					Scoreboard::setLine($player, " " . $currentLine++, "       ");
 
 					Scoreboard::setLine($player, " " . $currentLine++, " §fKills: §a" . $this->plugin->getEliminations($player));
+					Scoreboard::setLine($player, " " . $currentLine++, " §fFinal Kills: §aWork in progess"
 					Scoreboard::setLine($player, " " . $currentLine++, " §fBeds Broken: §a" . $this->plugin->getEliminationsb($player));
 					Scoreboard::setLine($player, " " . $currentLine++, "§f ");
-					Scoreboard::setLine($player, " " . $currentLine++, " §eRede Hyper");
+					Scoreboard::setLine($player, " " . $currentLine++, " §eurservername.net");
 				}
 
 				if (count($team = $this->getAliveTeams()) === 1 && count($this->players) === count($this->teams[$team[0]]->getPlayers())) {
