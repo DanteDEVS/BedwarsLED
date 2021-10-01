@@ -26,12 +26,22 @@ use pocketmine\scheduler\Task;
 use pocketmine\Server;
 use pocketmine\utils\TextFormat;
 
+use xenialdan\apibossbar\BossBar;
+use xenialdan\MagicWE2\helper\SessionHelper;
+use xenialdan\MagicWE2\API; 
+use xenialdan\MagicWE2\Loader as WE;
+use pocketmine\level\sound\{PopSound, ClickSound, EndermanTeleportSound, AnvilUseSound, Sound, BlazeShootSound};
+use xenialdan\MagicWE2\selection\Selection; 
+use pocketmine\utils\Random;
+
 class Game
 {
 
 	public const STATE_LOBBY = 0;
 	public const STATE_RUNNING = 1;
 	public const STATE_REBOOT = 2;
+	/** @var BossBar */
+        public static $bossbar;
 	/** @var int $playersPerTeam */
 	public $playersPerTeam;
 	/** @var string $worldName */
@@ -201,6 +211,9 @@ class Game
 		$player->teleport($this->lobby->asVector3(), $player->yaw, $player->pitch);
 		$this->players[$player->getRawUniqueId()] = $player;
 
+		self::$bossbar = (new BossBar())->setPercentage(1);
+                self::$bossbar->setTitle(TextFormat::YELLOW . TextFormat::BOLD . "Bw" . TextFormat::RED . "Bed" . TextFormat::WHITE . "Wars" . TextFormat::GOLD . " Led" . TextFormat::YELLOW . "In " . TextFormat::GREEN . "Servername" . TextFormat::RESET . TextFormat::WHITE);
+                self::$bossbar->addPlayer($player);
 		$this->broadcastMessage(TextFormat::GRAY . $player->getName() . " " . TextFormat::YELLOW . "has joined the game " . TextFormat::YELLOW . "(" . TextFormat::AQUA . count($this->players) . TextFormat::YELLOW . "/" . TextFormat::AQUA . $this->maxPlayers . TextFormat::YELLOW . ")");
 		$player->getLevel()->broadcastLevelSoundEvent($player, LevelSoundEventPacket::SOUND_CONDUIT_ACTIVATE);
 		$player->getInventory()->clearAll();
