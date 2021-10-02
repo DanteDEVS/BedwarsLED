@@ -230,7 +230,7 @@ class Game
 			$a++;
 		}
 
-		$player->getInventory()->setItem(8, Item::get(Item::COMPASS)->setCustomName(TextFormat::YELLOW . "Leave"));
+		$player->getInventory()->setItem(8, Item::get(Item::COMPASS)->setCustomName(TextFormat::YELLOW . ("Leave"));
 		$this->checkLobby();
 	}
 
