@@ -19,7 +19,8 @@ BUT DONT WORRY WE ARE GONNA MAKE IT
 --------------------------------------------------------------
 # BedWars Led Need
 so you do need UniCodes 
-whats in rsp folder 
+whats THE Unicode.zip download that
 all credits to the owner:
 teddyz9_TaeyeonSNSD99_Frongky
 NOT SURE NAME
+-----------------------------------------------------------------
