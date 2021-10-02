@@ -529,7 +529,7 @@ class Game
 						if ($team->hasBed()) {
 							$status = TextFormat::GREEN . "⩋";
 						} elseif (!$team->hasBed() && $team->getPlayerCount() !== 0) {
-							$status = TextFormat::GREEN $team->getPlayerCount() . " ";
+							$status = TextFormat::GREEN . "" . $team->getPlayerCount() . "";
 						} elseif (!$team->hasBed() && $team->getPlayerCount() <= 0) {
 							$status = TextFormat::RED . "⩕";
 						} else {
@@ -543,7 +543,6 @@ class Game
 					Scoreboard::setLine($player, " " . $currentLine++, "       ");
 
 					Scoreboard::setLine($player, " " . $currentLine++, " §fKills: §a" . $this->plugin->getEliminations($player));
-					Scoreboard::setLine($player, " " . $currentLine++, " §fFinal Kills: §aWork in progess"
 					Scoreboard::setLine($player, " " . $currentLine++, " §fBeds Broken: §a" . $this->plugin->getEliminationsb($player));
 					Scoreboard::setLine($player, " " . $currentLine++, "§f ");
 					Scoreboard::setLine($player, " " . $currentLine++, " §eurservername.net");
