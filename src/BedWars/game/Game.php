@@ -200,10 +200,7 @@ class Game
 		$player->teleport(Server::getInstance()->getLevelByName($this->mapName)->getSafeSpawn());
 		$player->teleport($this->lobby->asVector3(), $player->yaw, $player->pitch);
 		$this->players[$player->getRawUniqueId()] = $player;
-
-		self::$bossbar = (new BossBar())->setPercentage(1);
-                self::$bossbar->setTitle(TextFormat::YELLOW . TextFormat::BOLD . "Bw" . TextFormat::RED . "Bed" . TextFormat::WHITE . "Wars" . TextFormat::GOLD . " Led" . TextFormat::YELLOW . "In " . TextFormat::GREEN . "Servername" . TextFormat::RESET . TextFormat::WHITE);
-                self::$bossbar->addPlayer($player);
+		
 		$this->broadcastMessage(TextFormat::GRAY . $player->getName() . " " . TextFormat::YELLOW . "has joined the game " . TextFormat::YELLOW . "(" . TextFormat::AQUA . count($this->players) . TextFormat::YELLOW . "/" . TextFormat::AQUA . $this->maxPlayers . TextFormat::YELLOW . ")");
 		$player->getLevel()->broadcastLevelSoundEvent($player, LevelSoundEventPacket::SOUND_CONDUIT_ACTIVATE);
 		$player->getInventory()->clearAll();
@@ -214,14 +211,7 @@ class Game
 		$player->setAllowFlight(false);
 		$player->setHealth(20);
 		$player->setFood(20);
-		$player->sendMessage("§a----------------------------
-                            \n§c§lBed§l§fWars : 
-                            \n§e§lProtect your bed and destroy the enemy beds
-                            \nUpgrade yourself and your team by collecting
-                            \nIron , Gold , Emerald and Diamond from the generators 
-                            \nto access powerful upgrade 
-                            \n§a----------------------------\n
-                            §c§lCross-Teaming with other teams is not allowed on this game.
+
 		$a = 0;
 		$items = array_fill(0, count($this->teams), Item::get(Item::WOOL));
 		foreach ($this->teams as $team) {
@@ -230,7 +220,7 @@ class Game
 			$a++;
 		}
 
-		$player->getInventory()->setItem(8, Item::get(Item::COMPASS)->setCustomName(TextFormat::YELLOW . ("Leave"));
+		$player->getInventory()->setItem(8, Item::get(Item::COMPASS)->setCustomName(TextFormat::YELLOW . "Leave"));
 		$this->checkLobby();
 	}
 
