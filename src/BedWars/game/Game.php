@@ -113,7 +113,7 @@ class Game
 		foreach ($this->teamInfo as $teamName => $parsedData) {
 			$this->teams[$teamName] = new Team($teamName, BedWars::TEAMS[strtolower($teamName)]);
 		}
-
+		
 		$this->maxPlayers = count($this->teams) * $this->playersPerTeam;
 		$this->reload();
 		$this->plugin->getScheduler()->scheduleRepeatingTask(new GameTick($this), 20);
