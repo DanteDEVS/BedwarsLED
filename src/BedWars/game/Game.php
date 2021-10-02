@@ -537,13 +537,13 @@ class Game
 							}
 						}
 						if ($team->hasBed()) {
-							$status = TextFormat::GREEN . "✔️";
+							$status = TextFormat::GREEN . "⩋";
 						} elseif (!$team->hasBed() && $team->getPlayerCount() !== 0) {
-							$status = TextFormat::AQUA . " " . $team->getPlayerCount() . " ";
+							$status = TextFormat::GREEN $team->getPlayerCount() . " ";
 						} elseif (!$team->hasBed() && $team->getPlayerCount() <= 0) {
-							$status = TextFormat::RED . "❌";
+							$status = TextFormat::RED . "⩕";
 						} else {
-							$status = TextFormat::RED . "❌";
+							$status = TextFormat::RED . "⩕";
 						}
 						$isPlayerTeam = $team->getName() === $playerTeam->getName() ? TextFormat::GRAY . "(YOU)" : "";
 						$stringFormat = " " . TextFormat::BOLD . $team->getColor() . ucfirst($team->getName()[0]) . "§l " . TextFormat::RESET . TextFormat::WHITE . ucfirst($team->getName()) . ": " . $status . " " . $isPlayerTeam;
