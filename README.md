@@ -16,3 +16,10 @@ TO EVERYTHING
 SHOP UI TO GUI TEST IS A THING
 UPGRADE UI TO GUI WE HAVING SOME PROBLEMS 
 BUT DONT WORRY WE ARE GONNA MAKE IT
+--------------------------------------------------------------
+# BedWars Led Need
+so you do need UniCodes 
+whats in rsp folder 
+all credits to the owner:
+teddyz9_TaeyeonSNSD99_Frongky
+NOT SURE NAME
