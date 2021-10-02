@@ -92,7 +92,7 @@ class GameListener implements Listener
 
 	public function onDamageHuman(EntityDamageByEntityEvent $event)
 	{
-		if ($event->getEntity() instanceof HumanEntityfbw) {
+		if ($event->getEntity() instanceof HumanEntity) {
 			$player = $event->getDamager();
 			if ($player instanceof Player) {
 				$event->setCancelled(true);
@@ -136,7 +136,7 @@ class GameListener implements Listener
 
 	public function onDamageTops(EntityDamageByEntityEvent $event)
 	{
-		if ($event->getEntity() instanceof TopsEntityfbw) {
+		if ($event->getEntity() instanceof TopsEntity) {
 			$player = $event->getDamager();
 			if ($player instanceof Player) {
 				$event->setCancelled(true);
@@ -146,7 +146,7 @@ class GameListener implements Listener
 
 	public function onDamageTopskill(EntityDamageByEntityEvent $event)
 	{
-		if ($event->getEntity() instanceof TopsEntityfbwkill) {
+		if ($event->getEntity() instanceof TopsEntitykill) {
 			$player = $event->getDamager();
 			if ($player instanceof Player) {
 				$event->setCancelled(true);
