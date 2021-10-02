@@ -409,6 +409,7 @@ class DefaultCommand extends PluginCommand
 		$sender->sendMessage(TextFormat::GREEN . "/bw list " . TextFormat::YELLOW . "Display list of loaded games");
 		$sender->sendMessage(TextFormat::GREEN . "/bw create " . TextFormat::YELLOW . "Create new game");
 		$sender->sendMessage(TextFormat::GREEN . "/bw delete " . TextFormat::YELLOW . "Delete existing game");
+                $sender->sendMessage(TextFormat::GREEN . "/bw addteam " . TextFormat::YELLOW . "add a team");
 		$sender->sendMessage(TextFormat::GREEN . "/bw setlobby " . TextFormat::YELLOW . "Set spawning position of a game");
 		$sender->sendMessage(TextFormat::GREEN . "/bw setmap " . TextFormat::YELLOW . "Set name of map (on join sign/in-game)");
 		$sender->sendMessage(TextFormat::GREEN . "/bw setpos " . TextFormat::YELLOW . "Set position [spawn,shop,upgrade] of a team");
