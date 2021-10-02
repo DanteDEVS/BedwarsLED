@@ -38,7 +38,6 @@ use pocketmine\utils\TextFormat;
 use pocketmine\item\Armor;
 use pocketmine\item\Sword;
 use pocketmine\network\mcpe\protocol\ModalFormRequestPacket;
-use pocketmine\Player;
 use pocketmine\utils\TextFormat;
 use pocketmine\inventory\transaction\action\SlotChangeAction;
 use pocketmine\item\Item;
