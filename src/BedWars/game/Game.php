@@ -372,7 +372,7 @@ class Game
 				if ($cause instanceof EntityDamageByChildEntityEvent) {
 					$damager = $cause->getDamager();
 					if ($playerTeam !== null) {
-						$this->broadcastMessage($playerTeam->getColor() . $player->getName() . " " . TextFormat::GRAY . "was shot by " . $this->plugin->getPlayerTeam($damager)->getColor() . $damager->getName());
+                                                $this->broadcastMessage($playerTeam->getColor() . $player->getName() . " " . TextFormat::GRAY . "was shot by " . $this->plugin->getPlayerTeam($damager)->getColor() . $damager->getName());
 						$this->plugin->addElimination($damager);
 						$kills = BedWars::getConfigs('kills');
 						$kills->set($damager->getName(), $kills->get($damager->getName()) + 1);
@@ -719,7 +719,7 @@ class Game
 
 	public function initShops(): void
 	{
-		foreach ($this->teamInfo as $team => $info) {
+                    foreach ($this->teamInfo as $team => $info) {
 			$shopPos = Utils::stringToVector(":", $info['shopPos']);
 			$level = $this->plugin->getServer()->getLevelByName($this->worldName);
 			if ($level !== null) {
@@ -751,7 +751,7 @@ class Game
 			$this->npcs[$entity->getId()] = [$team, 'upgrade'];
 		}
 	}
-
+	
 	public function initGenerators(): void
 	{
 		foreach ($this->generatorInfo as $generator) {
