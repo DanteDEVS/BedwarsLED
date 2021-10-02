@@ -474,7 +474,7 @@ class GameListener implements Listener
 						}
 
 						if ($npcType == "upgrade") {
-					            $this->shopWindows"$damager");
+					            $this->shopWindows($damager);
 						} else {
 					             $this->shopWindows($damager);
 						}
