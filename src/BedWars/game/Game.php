@@ -440,7 +440,7 @@ class Game
 						case 2;
 						case 1;
 							foreach ($this->players as $player) {
-								$player->sendTitle(TextFormat::RED . $this->startTime, "§bGet ready!");
+								$player->sendTitle(TextFormat::RED . $this->startTime, "§bGet ready to ");
 								$player->getLevel()->broadcastLevelSoundEvent($player, LevelSoundEventPacket::SOUND_BOTTLE_DRAGONBREATH);
 							}
 							break;
