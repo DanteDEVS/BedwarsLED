@@ -26,22 +26,12 @@ use pocketmine\scheduler\Task;
 use pocketmine\Server;
 use pocketmine\utils\TextFormat;
 
-use xenialdan\apibossbar\BossBar;
-use xenialdan\MagicWE2\helper\SessionHelper;
-use xenialdan\MagicWE2\API; 
-use xenialdan\MagicWE2\Loader as WE;
-use pocketmine\level\sound\{PopSound, ClickSound, EndermanTeleportSound, AnvilUseSound, Sound, BlazeShootSound};
-use xenialdan\MagicWE2\selection\Selection; 
-use pocketmine\utils\Random;
-
 class Game
 {
 
 	public const STATE_LOBBY = 0;
 	public const STATE_RUNNING = 1;
 	public const STATE_REBOOT = 2;
-	/** @var BossBar */
-        public static $bossbar;
 	/** @var int $playersPerTeam */
 	public $playersPerTeam;
 	/** @var string $worldName */
