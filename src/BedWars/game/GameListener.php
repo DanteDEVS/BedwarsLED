@@ -215,6 +215,15 @@ class GameListener implements Listener
 				$player->setAllowFlight(false);
 				$player->setHealth(20);
 				$player->setFood(20);
+                                $player->sendMessage("§a----------------------------
+                                            \n§c§lBed§l§fWars Dctxdev Test : 
+                                            \n§e§lProtect your bed and destroy the enemy beds
+                                            \nUpgrade yourself and your team by collecting
+                                            \nIron , Gold , Emerald and Diamond from the generators 
+                                            \nto access powerful upgrade  
+                                            \n§a----------------------------\n
+                                            §c§lCross-Teaming with other teams is not allowed on this game.
+                                ");
 				$player->setNameTag($player->getName());
 				Scoreboard::remove($player);
 				unset($player, $this->plugin->eliminations);
