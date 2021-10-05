@@ -211,7 +211,7 @@ class Game
 		$player->setAllowFlight(false);
 		$player->setHealth(20);
 		$player->setFood(20);
-
+		
 		$a = 0;
 		$items = array_fill(0, count($this->teams), Item::get(Item::WOOL));
 		foreach ($this->teams as $team) {
@@ -851,7 +851,7 @@ class Game
 		$this->spectators = array();
 		$this->players = array();
 		$this->winnerTeam = '';
-		$this->startTime = 60;
+		$this->startTime = 30;
 		$this->rebootTime = 10;
 		$this->generators = array();
 		$this->cachedPlayers = array();
