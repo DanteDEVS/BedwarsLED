@@ -30,7 +30,7 @@ class BedWars extends PluginBase
         "green" => "§a",
         "aqua" => "§b",
         "gold" => "§6",
-        "white" => "§"
+        "white" => "§f"
     ];
     public const GENERATOR_PRIORITIES = [
         'gold' => ['item' => Item::GOLD_INGOT, 'spawnText' => false, 'spawnBlock' => false, 'refreshRate' => 13],
