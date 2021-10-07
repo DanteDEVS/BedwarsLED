@@ -211,6 +211,13 @@ class Game
 		$player->setAllowFlight(false);
 		$player->setHealth(20);
 		$player->setFood(20);
+		$player->sendMessage("§a----------------------------
+                            \n§c§lBed§l§fWarsLed:
+			    \n§cThis bedwars so becarful
+                            \n§cwhen game start there would be another measage
+			    \n§cit will tell you what you need to do 
+			    \n§cGood luck there may be alot of tryhards
+                ");
 		
 		$a = 0;
 		$items = array_fill(0, count($this->teams), Item::get(Item::WOOL));
