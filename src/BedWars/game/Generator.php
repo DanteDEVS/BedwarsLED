@@ -139,7 +139,7 @@ class Generator extends Vector3
 	{
 		$this->tier++;
 
-		$this->repeatRate = $this->repeatRate - 10;
+		$this->repeatRate = $this->repeatRate - 100;
 	}
 
 	/**
