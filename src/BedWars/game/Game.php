@@ -543,7 +543,6 @@ class Game
 					Scoreboard::setLine($player, " " . $currentLine++, "       ");
 
 					Scoreboard::setLine($player, " " . $currentLine++, " §fKills: §a" . $this->plugin->getEliminations($player));
-					Scoreboard::setLine($player, " " . $currentLine++, " §fFinal Kills: §a");
 					Scoreboard::setLine($player, " " . $currentLine++, " §fBeds Broken: §a" . $this->plugin->getEliminationsb($player));
 					Scoreboard::setLine($player, " " . $currentLine++, "§f ");
 					Scoreboard::setLine($player, " " . $currentLine++, " §eurservername.net");
