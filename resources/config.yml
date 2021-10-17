@@ -1,0 +1,13 @@
+# WaterDog proxy support
+waterdog:
+  # Enable if you want connect player to random arena on join
+  enabled: false
+  # Player will be reconnected to this server when he wants to leave the arena.
+  lobbyServer: Lobby-2
+
+#MYSQL TRUE OR FALSE
+mysql-enabled: false
+host: 127.0.0.1
+user: zalpha
+password: "1"
+database: bwteam
