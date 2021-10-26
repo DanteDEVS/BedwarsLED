@@ -1,4 +1,4 @@
-name: BedWars Led
+name: BedWars_Led
 version: 1.0.0
 api: 3.x.x
 main: BedWars\BedWars
