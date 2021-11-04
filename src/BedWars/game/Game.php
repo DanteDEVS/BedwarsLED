@@ -83,7 +83,7 @@ class Game
 	/** @var array $generatorInfo */
 	private $generatorInfo;
 	/** @var float|int $tierUpdate */
-	private $tierUpdate = 20 * 1;
+	private $tierUpdate = 200 * 1;
 	/** @var string $tierUpdateGen */
 	private $tierUpdateGen = "diamond";
 	/** @var PlayerCache[] $cachedPlayers */
