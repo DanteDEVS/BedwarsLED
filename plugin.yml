@@ -1,5 +1,5 @@
 name: BedWars_Led
-version: 1.0.0
+version: 1.0.0-noupdates
 api: 3.x.x
 main: BedWars\BedWars
 author: dctxdev & dantedevs
