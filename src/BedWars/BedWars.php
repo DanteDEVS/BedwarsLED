@@ -53,6 +53,7 @@ class BedWars extends PluginBase
     public $staticRestartTime;
     public $eliminations = [];
     public $eliminationsb = [];
+    public $eliminationsf = [];
 
     public static function getConfigs(string $value)
     {
@@ -206,9 +207,21 @@ class BedWars extends PluginBase
             return $this->eliminationsb[$player->getName()];
         } else {
             return $this->eliminationsb[$player->getName()] = 0;
+    }
+    public function addEliminationsf(Player $player): void
+    {
+        if (isset($this->eliminationsf[$player->getName()])) {
+            $this->eliminationsf[$player->getName()] = $this->eliminationsb[$player->getName()] + 1;
+    {
+    public function getEliminationsf(Player $player): int
+    {
+        if (isset($this->eliminationsf[$player->getName()])) {
+            return $this->eliminationsf[$player->getName()];
+        } else {
+            return $this->eliminationsf[$player->getName()] = 0;
+    }           
         }
     }
-
     public function writeArenaData(string $gameName, array $gameData): void
     {
         $location = $this->getDataFolder() . "arenas/" . $gameName . ".json";
