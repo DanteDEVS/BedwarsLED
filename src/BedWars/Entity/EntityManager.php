@@ -38,5 +38,15 @@ class EntityManager {
 		$human->setNameTagVisible(true);
 		$human->setNameTagAlwaysVisible(true);
 		$human->spawnToAll();
+	}	
+		
+	public function setTopsbwfinalkill(Player $player) {
+		$nbt = Entity::createBaseNBT(new Vector3((float)$player->getX(), (float)$player->getY(), (float)$player->getZ()));
+		$nbt->setTag($player->namedtag->getTag('Skin'));
+		$human = new TopsEntityfinalkill($player->getLevel(), $nbt);
+		$human->setSkin(new Skin('textfloat', $human->getInvisibleSkin()));
+		$human->setNameTagVisible(true);
+		$human->setNameTagAlwaysVisible(true);
+		$human->spawnToAll();	
 	}
 }
