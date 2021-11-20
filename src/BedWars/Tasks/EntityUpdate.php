@@ -18,7 +18,7 @@ class EntityUpdate extends Task
 				$entity->addEffect(new EffectInstance(Effect::getEffect(Effect::FIRE_RESISTANCE), 999));
 				$entity->setNameTag(self::setNameb());
 				$entity->setNameTagAlwaysVisible(true);
-				$entity->setScale(1.2);
+				$entity->setScale(1.5);
 			}
 			if ($entity instanceof TopsEntitykill) {
 				$entity->setNameTag(self::Topkills());
