@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace BedWars\Entity;
 use BedWars\{Entity\types\HumanEntity, Entity\types\TopsEntity,
-Entity\types\TopsEntitykill};
+Entity\types\TopsEntitykill, TopsFinalKills};
 use pocketmine\{Server, Player, utils\TextFormat, level\Level, entity\Skin, entity\Entity, math\Vector3};
 
 class EntityManager {
