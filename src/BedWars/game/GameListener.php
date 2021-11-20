@@ -7,6 +7,7 @@ use BedWars\{BedWars,
 	Entity\types\HumanEntity,
 	Entity\types\TopsEntity,
 	Entity\types\TopsEntitykills,
+	Entity\types\TopsFinalKills,
 	utils\Scoreboard
 };
 use BedWars\game\shop\ItemShop;
@@ -148,6 +149,16 @@ class GameListener implements Listener
 			$player = $event->getDamager();
 			if ($player instanceof Player) {
 				$event->setCancelled(true);
+			}
+		}
+	}                         
+							
+	public function onDamageTopsFinalKills(EntityDamageByEntityEvent $event)
+	{
+		if ($event->getEntity() instanceof TopsEntityfinalkills) {
+			$player = $event->getDamager();
+			if ($player instanceof Player) {
+				$event->setCancelled(true);			
 			}
 		}
 	}
