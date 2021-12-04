@@ -1,3 +1,4 @@
+
 <?php
 
 
@@ -59,6 +60,7 @@ class DefaultCommand extends PluginCommand
 			switch (strtolower($args[0])) {
 				case "list";
 					$sender->sendMessage(TextFormat::BOLD . TextFormat::DARK_RED . "Arena List");
+					foreach ($this->getPlugin()->game as $game) {
 						$sender->sendMessage(TextFormat::GRAY . "- " . TextFormat::GREEN . $game->getName() . " [" . count($game->players) . "/" . $game->getMaxPlayers() . "]");
 					}
 					break;
@@ -74,6 +76,7 @@ class DefaultCommand extends PluginCommand
 					}
 
 					$gameName = $args[1];
+					if (array_key_exists($gameName, $this->getPlugin()->game)) {
 						$sender->sendMessage(BedWars::PREFIX . TextFormat::YELLOW . "Game called " . $gameName . " already exists!");
 						return;
 					}
@@ -144,11 +147,13 @@ class DefaultCommand extends PluginCommand
 					}
 
 					$gameName = $args[1];
+					if (!in_array($gameName, array_keys($this->getPlugin()->game))) {
 						$sender->sendMessage(BedWars::PREFIX . TextFormat::YELLOW . "Game called " . $gameName . " doesn't exist!");
 						return;
 					}
 
 					//close the arena if it's running
+					$gameObject = $this->getPlugin()->game[$gameName];
 					if (!$gameObject instanceof Game) {
 						return; //wtf ??
 					}
