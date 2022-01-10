@@ -1,3 +1,4 @@
+
 <?php /** @noinspection PhpPossiblePolymorphicInvocationInspection */
 
 
@@ -83,7 +84,7 @@ class Game
 	/** @var array $generatorInfo */
 	private $generatorInfo;
 	/** @var float|int $tierUpdate */
-	private $tierUpdate = 200 * 1;
+	private $tierUpdate = 20 * 1;
 	/** @var string $tierUpdateGen */
 	private $tierUpdateGen = "diamond";
 	/** @var PlayerCache[] $cachedPlayers */
@@ -543,7 +544,6 @@ class Game
 					Scoreboard::setLine($player, " " . $currentLine++, "       ");
 
 					Scoreboard::setLine($player, " " . $currentLine++, " §fKills: §a" . $this->plugin->getEliminations($player));
-					Scoreboard::setLine($player, " " . $currentLine++, " §fFinalKills: §a" . $this->plugin->getEliminationf($player));
 					Scoreboard::setLine($player, " " . $currentLine++, " §fBeds Broken: §a" . $this->plugin->getEliminationsb($player));
 					Scoreboard::setLine($player, " " . $currentLine++, "§f ");
 					Scoreboard::setLine($player, " " . $currentLine++, " §eurservername.net");
@@ -827,7 +827,6 @@ class Game
 			Scoreboard::remove($player);
 			unset($player, $this->plugin->eliminations);
 			unset($player, $this->plugin->eliminationsb);
-			unset($player, $this->plugin->eliminationsf);			
 		}
 
 		foreach ($this->teams as $team) {
