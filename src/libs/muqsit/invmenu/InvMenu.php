@@ -21,7 +21,7 @@ namespace libs\muqsit\invmenu;
 
 use libs\muqsit\invmenu\inventories\BaseFakeInventory;
 
-use pocketmine\Player;
+use pocketmine\player\Player;
 
 class InvMenu implements MenuIds{
 

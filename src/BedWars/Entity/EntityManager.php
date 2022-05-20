@@ -9,21 +9,21 @@ use pocketmine\{Server, Player, utils\TextFormat, level\Level, entity\Skin, enti
 class EntityManager {
 	
 	public function seGamebw(Player $player) {
-		$nbt = Entity::createBaseNBT(new Vector3((float)$player->getX(), (float)$player->getY(), (float)$player->getZ()));
+		$nbt = Entity::createBaseNBT(new Vector3((float)$player->getPosition()->getX(), (float)$player->getPosition()->getY(), (float)$player->getPosition()->getZ()));
 		$nbt->setTag(clone $player->namedtag->getCompoundTag('Skin'));
-		$human = new HumanEntity($player->getLevel(), $nbt);
+		$human = new HumanEntity($player->getWorld(), $nbt);
 		$human->setNameTag('');
 		$human->setNameTagVisible(true);
 		$human->setNameTagAlwaysVisible(true);
-		$human->yaw = $player->getYaw();
-		$human->pitch = $player->getPitch();
+		$human->yaw = $player->getLocation()->getYaw();
+		$human->pitch = $player->getLocation()->getPitch();
 		$human->spawnToAll();
 	}
 	
 	public function setTopsbw(Player $player) {
-		$nbt = Entity::createBaseNBT(new Vector3((float)$player->getX(), (float)$player->getY(), (float)$player->getZ()));
+		$nbt = Entity::createBaseNBT(new Vector3((float)$player->getPosition()->getX(), (float)$player->getPosition()->getY(), (float)$player->getPosition()->getZ()));
 		$nbt->setTag($player->namedtag->getTag('Skin'));
-		$human = new TopsEntity($player->getLevel(), $nbt);
+		$human = new TopsEntity($player->getWorld(), $nbt);
 		$human->setSkin(new Skin('textfloat', $human->getInvisibleSkin()));
 		$human->setNameTagVisible(true);
 		$human->setNameTagAlwaysVisible(true);
@@ -31,9 +31,9 @@ class EntityManager {
 	}
 	
 	public function setTopsbwkill(Player $player) {
-		$nbt = Entity::createBaseNBT(new Vector3((float)$player->getX(), (float)$player->getY(), (float)$player->getZ()));
+		$nbt = Entity::createBaseNBT(new Vector3((float)$player->getPosition()->getX(), (float)$player->getPosition()->getY(), (float)$player->getPosition()->getZ()));
 		$nbt->setTag($player->namedtag->getTag('Skin'));
-		$human = new TopsEntitykill($player->getLevel(), $nbt);
+		$human = new TopsEntitykill($player->getWorld(), $nbt);
 		$human->setSkin(new Skin('textfloat', $human->getInvisibleSkin()));
 		$human->setNameTagVisible(true);
 		$human->setNameTagAlwaysVisible(true);
@@ -41,9 +41,9 @@ class EntityManager {
 	}	
 		
 	public function setTopsbwfinalkill(Player $player) {
-		$nbt = Entity::createBaseNBT(new Vector3((float)$player->getX(), (float)$player->getY(), (float)$player->getZ()));
+		$nbt = Entity::createBaseNBT(new Vector3((float)$player->getPosition()->getX(), (float)$player->getPosition()->getY(), (float)$player->getPosition()->getZ()));
 		$nbt->setTag($player->namedtag->getTag('Skin'));
-		$human = new TopsEntityfinalkill($player->getLevel(), $nbt);
+		$human = new TopsEntityfinalkill($player->getWorld(), $nbt);
 		$human->setSkin(new Skin('textfloat', $human->getInvisibleSkin()));
 		$human->setNameTagVisible(true);
 		$human->setNameTagAlwaysVisible(true);

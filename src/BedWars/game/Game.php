@@ -1,7 +1,4 @@
-
-<?php /** @noinspection PhpPossiblePolymorphicInvocationInspection */
-
-
+<?php
 namespace BedWars\game;
 
 use BedWars\{BedWars, utils\Scoreboard};
@@ -14,15 +11,15 @@ use pocketmine\item\Compass;
 use pocketmine\item\enchantment\Enchantment;
 use pocketmine\item\enchantment\EnchantmentInstance;
 use pocketmine\item\Item;
-use pocketmine\level\Level;
-use pocketmine\level\Position;
-use pocketmine\level\sound\{BlazeShootSound};
-use pocketmine\level\sound\{EndermanTeleportSound};
+use pocketmine\world\World;
+use pocketmine\world\Position;
+use pocketmine\world\sound\{BlazeShootSound};
+use pocketmine\world\sound\{EndermanTeleportSound};
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\StringTag;
 use pocketmine\network\mcpe\protocol\{LevelSoundEventPacket};
 use pocketmine\network\mcpe\protocol\PlaySoundPacket;
-use pocketmine\Player;
+use pocketmine\player\Player;
 use pocketmine\scheduler\Task;
 use pocketmine\Server;
 use pocketmine\utils\TextFormat;
@@ -105,7 +102,7 @@ class Game
 		$this->playersPerTeam = $data['playersPerTeam'];
 		$this->worldName = $data['world'];
 		$lobbyVector = explode(":", $data['lobby']);
-		$this->lobby = new Position((float)$lobbyVector[0], (float)$lobbyVector[1], (float)$lobbyVector[2], Server::getInstance()->getLevelByName($data['mapName']));
+		$this->lobby = new Position((float)$lobbyVector[0], (float)$lobbyVector[1], (float)$lobbyVector[2], Server::getInstance()->getWorldManager()->getWorldByName($data['mapName']));
 		$this->lobbyName = explode(":", $data['lobby'][3]);
 		$this->mapName = $data['mapName'];
 		$this->teamInfo = $data['teamInfo'];
@@ -122,8 +119,8 @@ class Game
 
 	public function reload(): void
 	{
-		$this->plugin->getServer()->loadLevel($this->worldName);
-		$world = $this->plugin->getServer()->getLevelByName($this->worldName);
+		$this->plugin->getServer()->getWorldManager()->loadWorld($this->worldName);
+		$world = $this->plugin->getServer()->getWorldManager()->getWorldByName($this->worldName);
 		if (!$world instanceof Level) {
 			$this->plugin->getLogger()->info(BedWars::PREFIX . TextFormat::YELLOW . "Failed to load arena " . $this->gameName . " because it's world does not exist!");
 			return;
@@ -198,30 +195,30 @@ class Game
 		}
 
 		$this->cachedPlayers[$player->getRawUniqueId()] = new PlayerCache($player);
-		$player->teleport(Server::getInstance()->getLevelByName($this->mapName)->getSafeSpawn());
-		$player->teleport($this->lobby->asVector3(), $player->yaw, $player->pitch);
+		$player->teleport(Server::getInstance()->getWorldManager()->getWorldByName($this->mapName)->getSafeSpawn());
+		$player->teleport($this->lobby->getPosition()->asVector3(), $player->yaw, $player->pitch);
 		$this->players[$player->getRawUniqueId()] = $player;
 		
 		$this->broadcastMessage(TextFormat::GRAY . $player->getName() . " " . TextFormat::YELLOW . "has joined the game " . TextFormat::YELLOW . "(" . TextFormat::AQUA . count($this->players) . TextFormat::YELLOW . "/" . TextFormat::AQUA . $this->maxPlayers . TextFormat::YELLOW . ")");
-		$player->getLevel()->broadcastLevelSoundEvent($player, LevelSoundEventPacket::SOUND_CONDUIT_ACTIVATE);
+		$player->getWorld()->broadcastLevelSoundEvent($player, LevelSoundEventPacket::SOUND_CONDUIT_ACTIVATE);
 		$player->getInventory()->clearAll();
 		$player->getArmorInventory()->clearAll();
 		$player->setGamemode(2);
-		$player->setFood(20);
-		$player->removeAllEffects();
+		$player->getHungerManager()->setFood(20);
+		$player->getEffects()->all()->clear();
 		$player->setAllowFlight(false);
 		$player->setHealth(20);
-		$player->setFood(20);
+		$player->getHungerManager()->setFood(20);
 
 		$a = 0;
-		$items = array_fill(0, count($this->teams), Item::get(Item::WOOL));
+		$items = array_fill(0, count($this->teams), \pocketmine\item\ItemFactory::getInstance()->get(\pocketmine\item\ItemIds::WOOL));
 		foreach ($this->teams as $team) {
 			$items[$a]->setDamage(Utils::colorIntoWool($team->getColor()));
 			$player->getInventory()->addItem($items[$a]);
 			$a++;
 		}
 
-		$player->getInventory()->setItem(8, Item::get(Item::COMPASS)->setCustomName(TextFormat::YELLOW . "Leave"));
+		$player->getInventory()->setItem(8, \pocketmine\item\ItemFactory::getInstance()->get(\pocketmine\item\ItemIds::COMPASS)->setCustomName(TextFormat::YELLOW . "Leave"));
 		$this->checkLobby();
 	}
 
@@ -268,8 +265,8 @@ class Game
 		foreach ($player->getInventory()->getContents() as $slot => $item) {
 			if ($item instanceof Compass) {
 				$player->getInventory()->removeItem($item);
-				$player->getInventory()->setItem($slot, Item::get(Item::COMPASS)->setCustomName(TextFormat::GREEN . "Tap to switch"));
-				$player->getLevel()->addSound(new BlazeShootSound($player));
+				$player->getInventory()->setItem($slot, \pocketmine\item\ItemFactory::getInstance()->get(\pocketmine\item\ItemIds::COMPASS)->setCustomName(TextFormat::GREEN . "Tap to switch"));
+				$player->getWorld()->addSound(new BlazeShootSound($player));
 			}
 		}
 	}
@@ -303,7 +300,7 @@ class Game
 		$pk->z = (int)$player->z;
 		$pk->volume = $volume;
 		$pk->pitch = $pitch;
-		$player->dataPacket($pk);
+		$player->getNetworkSession()->sendDataPacket($pk);
 	}
 
 	/**
@@ -342,8 +339,8 @@ class Game
 			unset($this->players[$player->getRawUniqueId()]);
 			$player->setGamemode(Player::SPECTATOR);
 			$player->sendTitle(TextFormat::BOLD . TextFormat::RED . "§lYOU DIED!", TextFormat::GRAY . "You will no longer respawn");
-			$player->getInventory()->setItem(5, Item::get(Item::COMPASS)->setCustomName(TextFormat::YELLOW . "Leave"));
-			$player->getLevel()->addSound(new EndermanTeleportSound($player));
+			$player->getInventory()->setItem(5, \pocketmine\item\ItemFactory::getInstance()->get(\pocketmine\item\ItemIds::COMPASS)->setCustomName(TextFormat::YELLOW . "Leave"));
+			$player->getWorld()->addSound(new EndermanTeleportSound($player));
 		} else {
 			$player->setGamemode(Player::SPECTATOR);
 			$player->getInventory()->clearAll();
@@ -432,7 +429,7 @@ class Game
 						case 1;
 							foreach ($this->players as $player) {
 								$player->sendTitle(TextFormat::RED . $this->startTime, "§bGet ready to ");
-								$player->getLevel()->broadcastLevelSoundEvent($player, LevelSoundEventPacket::SOUND_BOTTLE_DRAGONBREATH);
+								$player->getWorld()->broadcastLevelSoundEvent($player, LevelSoundEventPacket::SOUND_BOTTLE_DRAGONBREATH);
 							}
 							break;
 					}
@@ -465,7 +462,7 @@ class Game
 				foreach ($this->players as $player) {
 					/** @var Player $player */
 
-					if ($player->getInventory()->contains(Item::get(Item::COMPASS))) {
+					if ($player->getInventory()->contains(\pocketmine\item\ItemFactory::getInstance()->get(\pocketmine\item\ItemIds::COMPASS))) {
 						$trackIndex = $this->trackingPositions[$player->getRawUniqueId()];
 						$team = $this->teams[$trackIndex];
 						$player->sendTip(TextFormat::WHITE . "Tracking: " . TextFormat::BOLD . $team->getColor() . ucfirst($team->getName()) . " " . TextFormat::RESET . TextFormat::WHITE . "- Distance: " . TextFormat::BOLD . $team->getColor() . round(Utils::stringToVector(":", $this->teamInfo[$trackIndex]['spawnPos'])->distance($player)) . "m");
@@ -475,7 +472,7 @@ class Game
 
 						$player->sendTitle(TextFormat::RED . "§lYOU DIED!", TextFormat::YELLOW . "You will respawn in " . TextFormat::RED . $this->deadQueue[$player->getRawUniqueId()] . " " . TextFormat::YELLOW . "seconds!");
 						$player->sendMessage(TextFormat::YELLOW . "You will respawn in " . TextFormat::RED . $this->deadQueue[$player->getRawUniqueId()] . " " . TextFormat::YELLOW . "seconds!");
-						$player->getLevel()->broadcastLevelSoundEvent($player, LevelSoundEventPacket::SOUND_NOTE, $this->deadQueue[$player->getRawUniqueId()]);
+						$player->getWorld()->broadcastLevelSoundEvent($player, LevelSoundEventPacket::SOUND_NOTE, $this->deadQueue[$player->getRawUniqueId()]);
 
 						--$this->deadQueue[$player->getRawUniqueId()];
 						if ($this->deadQueue[$player->getRawUniqueId()] === 0) {
@@ -506,10 +503,10 @@ class Game
 						if (!$team->hasBed() && (count($team->getPlayers()) - $team->dead) === 0) {
 							foreach ($this->npcs as $entityId => $data) {
 								if ($data[0] === $team->getName()) {
-									foreach ($player->getLevel()->getEntities() as $entity) {
+									foreach ($player->getWorld()->getEntities() as $entity) {
 										if ($entity->getId() === $entityId) {
 											if ($entity !== null) {
-												foreach ($entity->getLevel()->getNearbyEntities($entity->getBoundingBox()->expandedCopy(20, 10, 20), $entity) as $generator) {
+												foreach ($entity->getWorld()->getNearbyEntities($entity->getBoundingBox()->expandedCopy(20, 10, 20), $entity) as $generator) {
 													if ($generator instanceof Player) {
 														continue;
 													}
@@ -565,9 +562,9 @@ class Game
 				if ($this->tierUpdate == 0) {
 					$this->tierUpdate = 20 * 1;
 					foreach ($this->generators as $generator) {
-						if ($generator->itemID == Item::DIAMOND && $this->tierUpdateGen == "diamond") {
+						if ($generator->itemID == \pocketmine\item\ItemIds::DIAMOND && $this->tierUpdateGen == "diamond") {
 							$generator->updateTier();
-						} elseif ($generator->itemID == Item::EMERALD && $this->tierUpdateGen == "emerald") {
+						} elseif ($generator->itemID == \pocketmine\item\ItemIds::EMERALD && $this->tierUpdateGen == "emerald") {
 							$generator->updateTier();
 						}
 					}
@@ -597,7 +594,7 @@ class Game
 	{
 		foreach ($this->players as $player) {
 			$player->sendTitle("§a§lGAME STARTED!");
-			$player->getLevel()->broadcastLevelSoundEvent($player, LevelSoundEventPacket::SOUND_BLOCK_BELL_HIT);
+			$player->getWorld()->broadcastLevelSoundEvent($player, LevelSoundEventPacket::SOUND_BLOCK_BELL_HIT);
 			$player->setGamemode(0);
 		}
 		$this->broadcastMessage(TextFormat::GREEN . "Game has started! ");
@@ -641,8 +638,7 @@ class Game
 			/**
 			 * @inheritDoc
 			 */
-			public function onRun(int $currentTick): void
-			{
+			public function onRun(): void {
 				$this->game->initShops();
 				$this->game->initGenerators();
 			}
@@ -661,28 +657,28 @@ class Game
 		$spawnPos = $this->teamInfo[$team->getName()]['spawnPos'];
 
 		$player->setGamemode(Player::SURVIVAL);
-		$player->setFood($player->getMaxFood());
+		$player->getHungerManager()->setFood($player->getHungerManager()->getMaxFood());
 		$player->setHealth($player->getMaxHealth());
 		$player->getArmorInventory()->clearAll(true);
 		$player->getInventory()->clearAll();
-		$player->teleport($this->plugin->getServer()->getLevelByName($this->worldName)->getSafeSpawn());
+		$player->teleport($this->plugin->getServer()->getWorldManager()->getWorldByName($this->worldName)->getSafeSpawn());
 		$player->getInventory()->clearAll();
 		$player->teleport(Utils::stringToVector(":", $spawnPos));
 
 		//inventory
-		$helmet = Item::get(Item::LEATHER_CAP);
-		$chestplate = Item::get(Item::LEATHER_CHESTPLATE);
-		$leggings = Item::get(Item::LEATHER_LEGGINGS);
-		$boots = Item::get(Item::LEATHER_BOOTS);
+		$helmet = \pocketmine\item\ItemFactory::getInstance()->get(\pocketmine\item\ItemIds::LEATHER_CAP);
+		$chestplate = \pocketmine\item\ItemFactory::getInstance()->get(\pocketmine\item\ItemIds::LEATHER_CHESTPLATE);
+		$leggings = \pocketmine\item\ItemFactory::getInstance()->get(\pocketmine\item\ItemIds::LEATHER_LEGGINGS);
+		$boots = \pocketmine\item\ItemFactory::getInstance()->get(\pocketmine\item\ItemIds::LEATHER_BOOTS);
 
 		$hasArmorUpdated = true;
 
 		switch ($team->getArmor($player)) {
 			case "iron";
-				$leggings = Item::get(Item::IRON_LEGGINGS);
+				$leggings = \pocketmine\item\ItemFactory::getInstance()->get(\pocketmine\item\ItemIds::IRON_LEGGINGS);
 				break;
 			case "diamond";
-				$boots = Item::get(Item::IRON_BOOTS);
+				$boots = \pocketmine\item\ItemFactory::getInstance()->get(\pocketmine\item\ItemIds::IRON_BOOTS);
 				break;
 			default;
 				$hasArmorUpdated = false;
@@ -706,7 +702,7 @@ class Game
 		$player->getArmorInventory()->setLeggings($leggings);
 		$player->getArmorInventory()->setBoots($boots);
 
-		$sword = Item::get(Item::WOODEN_SWORD);
+		$sword = \pocketmine\item\ItemFactory::getInstance()->get(\pocketmine\item\ItemIds::WOODEN_SWORD);
 
 		$swordUpgrade = $team->getUpgrade('sharpenedSwords');
 		if ($swordUpgrade > 0) {
@@ -714,7 +710,7 @@ class Game
 		}
 
 		$player->getInventory()->setItem(0, $sword);
-		$player->getInventory()->setItem(8, Item::get(Item::COMPASS)->setCustomName(TextFormat::GREEN . "Tap to switch"));
+		$player->getInventory()->setItem(8, \pocketmine\item\ItemFactory::getInstance()->get(\pocketmine\item\ItemIds::COMPASS)->setCustomName(TextFormat::GREEN . "Tap to switch"));
 
 	}
 
@@ -722,14 +718,14 @@ class Game
 	{
                     foreach ($this->teamInfo as $team => $info) {
 			$shopPos = Utils::stringToVector(":", $info['shopPos']);
-			$level = $this->plugin->getServer()->getLevelByName($this->worldName);
+			$level = $this->plugin->getServer()->getWorldManager()->getWorldByName($this->worldName);
 			if ($level !== null) {
 				$chunk = $level->getChunk($shopPos->getFloorX() >> 4, $shopPos->getFloorZ() >> 4, true);
 				$level->loadChunk($chunk->getX(), $chunk->getZ());
 				$nbt = Entity::createBaseNBT($shopPos, null);
 				$nbt->setTag(new StringTag("Team", $team));
 				$nbt->setString("GameEntity", "shop");
-				$entity = Entity::createEntity("Villager", $this->plugin->getServer()->getLevelByName($this->worldName), $nbt);
+				$entity = Entity::createEntity("Villager", $this->plugin->getServer()->getWorldManager()->getWorldByName($this->worldName), $nbt);
 				if ($entity !== null) {
 					$entity->setNameTag(TextFormat::AQUA . "ITEM SHOP\n" . TextFormat::BOLD . TextFormat::YELLOW . "TAP TO USE");
 					$entity->setNameTagAlwaysVisible(true);
@@ -744,7 +740,7 @@ class Game
 			$nbt = Entity::createBaseNBT($upgradePos, null);
 			$nbt->setTag(new StringTag("Team", $team));
 			$nbt->setString("GameEntity", "upgrade");
-			$entity = Entity::createEntity("Villager", $this->plugin->getServer()->getLevelByName($this->worldName), $nbt);
+			$entity = Entity::createEntity("Villager", $this->plugin->getServer()->getWorldManager()->getWorldByName($this->worldName), $nbt);
 			$entity->setNameTag(TextFormat::AQUA . "TEAM UPGRADES\n" . TextFormat::BOLD . TextFormat::YELLOW . "TAP TO USE");
 			$entity->setNameTagAlwaysVisible(true);
 			$entity->spawnToAll();
@@ -763,7 +759,7 @@ class Game
 			$delay = $generatorData['refreshRate'];
 
 			$vector = Utils::stringToVector(":", $generator['position']);
-			$position = new Position((float)$vector->x, (float)$vector->y, (float)$vector->z, $this->plugin->getServer()->getLevelByName($this->worldName));
+			$position = new Position((float)$vector->x, (float)$vector->y, (float)$vector->z, $this->plugin->getServer()->getWorldManager()->getWorldByName($this->worldName));
 
 			$this->generators[] = new Generator($item, $delay, $position, $spawnText, $spawnBlock);
 
@@ -795,7 +791,7 @@ class Game
 				if (!$player->isOnline()) {
 					continue;
 				}
-				if ($player->isAlive() && $player->getLevel()->getFolderName() === $this->worldName) {
+				if ($player->isAlive() && $player->getWorld()->getFolderName() === $this->worldName) {
 					$players[] = $player;
 				}
 			}
@@ -816,14 +812,14 @@ class Game
 			$player->setGamemode(0);
 			$this->cachedPlayers[$player->getRawUniqueId()]->load();
 
-			$player->setFood(20);
-			$player->removeAllEffects(true);
+			$player->getHungerManager()->setFood(20);
+			$player->getEffects()->all()->clear(true);
 			$player->setAllowFlight(false);
 			$player->setHealth(20);
-			$player->setFood(20);
+			$player->getHungerManager()->setFood(20);
 			$player->setNameTag($player->getName());
 
-			$player->teleport(Server::getInstance()->getDefaultLevel()->getSafeSpawn());
+			$player->teleport(Server::getInstance()->getWorldManager()->getDefaultWorld()->getSafeSpawn());
 			Scoreboard::remove($player);
 			unset($player, $this->plugin->eliminations);
 			unset($player, $this->plugin->eliminationsb);
@@ -842,7 +838,7 @@ class Game
 				$generator->getFloatingText()->setInvisible(true);
 				foreach ($this->plugin->getServer()->getOnlinePlayers() as $player) {
 					foreach ($generator->getFloatingText()->encode() as $packet) {
-						$player->dataPacket($packet);
+						$player->getNetworkSession()->sendDataPacket($packet);
 					}
 				}
 			}
@@ -857,7 +853,7 @@ class Game
 		$this->cachedPlayers = array();
 		$this->state = self::STATE_LOBBY;
 		$this->starting = false;
-		$this->plugin->getServer()->unloadLevel($this->plugin->getServer()->getLevelByName($this->worldName));
+		$this->plugin->getServer()->getWorldManager()->unloadWorld($this->plugin->getServer()->getWorldManager()->getWorldByName($this->worldName));
 		$this->reload();
 
 

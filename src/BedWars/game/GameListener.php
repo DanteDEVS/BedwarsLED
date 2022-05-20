@@ -32,7 +32,7 @@ use pocketmine\event\player\PlayerQuitEvent;
 use pocketmine\event\server\DataPacketReceiveEvent;
 use pocketmine\math\Vector2;
 use pocketmine\network\mcpe\protocol\ModalFormResponsePacket;
-use pocketmine\Player;
+use pocketmine\player\Player;
 use pocketmine\Server;
 use pocketmine\utils\TextFormat;
 
@@ -43,8 +43,8 @@ use pocketmine\inventory\transaction\action\SlotChangeAction;
 use pocketmine\item\Item;
 use pocketmine\item\enchantment\Enchantment;
 use pocketmine\item\enchantment\EnchantmentInstance;
-use pocketmine\level\sound\PopSound;
-use pocketmine\level\sound\EndermanTeleportSound;
+use pocketmine\world\sound\PopSound;
+use pocketmine\world\sound\EndermanTeleportSound;
 use libs\muqsit\invmenu\InvMenu;
 use libs\muqsit\invmenu\InvMenuHandler;
 
@@ -94,9 +94,9 @@ class GameListener implements Listener
 		if ($event->getEntity() instanceof HumanEntity) {
 			$player = $event->getDamager();
 			if ($player instanceof Player) {
-				$event->setCancelled(true);
+				$event->cancel();
 				foreach (self::getAllArenas() as $arena) {
-					$world = Server::getInstance()->getLevelByName($arena);
+					$world = Server::getInstance()->getWorldManager()->getWorldByName($arena);
 
 					if ($world != null) {
 
@@ -138,7 +138,7 @@ class GameListener implements Listener
 		if ($event->getEntity() instanceof TopsEntity) {
 			$player = $event->getDamager();
 			if ($player instanceof Player) {
-				$event->setCancelled(true);
+				$event->cancel();
 			}
 		}
 	}
@@ -148,7 +148,7 @@ class GameListener implements Listener
 		if ($event->getEntity() instanceof TopsEntitykill) {
 			$player = $event->getDamager();
 			if ($player instanceof Player) {
-				$event->setCancelled(true);
+				$event->cancel();
 			}
 		}
 	}                         
@@ -158,7 +158,7 @@ class GameListener implements Listener
 		if ($event->getEntity() instanceof TopsEntityfinalkills) {
 			$player = $event->getDamager();
 			if ($player instanceof Player) {
-				$event->setCancelled(true);			
+				$event->cancel();			
 			}
 		}
 	}
@@ -181,7 +181,7 @@ class GameListener implements Listener
 
 		$item = $event->getItem();
 
-		if ($item->getId() == Item::WOOL) {
+		if ($item->getId() == \pocketmine\item\ItemIds::WOOL) {
 			$teamColor = Utils::woolIntoColor($item->getDamage());
 
 			$playerGame = $this->plugin->getPlayerGame($player);
@@ -209,7 +209,7 @@ class GameListener implements Listener
 					$player->sendMessage(BedWars::PREFIX . TextFormat::GRAY . "You've joined team " . $teamColor . $team->getName());
 				}
 			}
-		} elseif ($item->getId() == Item::COMPASS) {
+		} elseif ($item->getId() == \pocketmine\item\ItemIds::COMPASS) {
 			$playerGame = $this->plugin->getPlayerGame($player);
 			if ($playerGame == null) return;
 
@@ -217,15 +217,15 @@ class GameListener implements Listener
 				$playerGame->trackCompass($player);
 			} elseif ($playerGame->getState() == Game::STATE_LOBBY) {
 				$playerGame->quit($player);
-				$player->teleport($this->plugin->getServer()->getDefaultLevel()->getSafeSpawn());
+				$player->teleport($this->plugin->getServer()->getWorldManager()->getDefaultWorld()->getSafeSpawn());
 				$player->getInventory()->clearAll();
 				$player->getArmorInventory()->clearAll();
 				$player->setGamemode(0);
-				$player->setFood(20);
-				$player->removeAllEffects();
+				$player->getHungerManager()->setFood(20);
+				$player->getEffects()->all()->clear();
 				$player->setAllowFlight(false);
 				$player->setHealth(20);
-				$player->setFood(20);
+				$player->getHungerManager()->setFood(20);
 				$player->setNameTag($player->getName());
 				Scoreboard::remove($player);
 				unset($player, $this->plugin->eliminations);
@@ -245,7 +245,7 @@ class GameListener implements Listener
 		}
 	}
 
-	public function onEntityLevelChange(EntityLevelChangeEvent $event): void
+	public function onEntityLevelChange(EntityWorldChangeEvent $event): void
 	{
 		$player = $event->getEntity();
 		if (!$player instanceof Player) {
@@ -262,7 +262,7 @@ class GameListener implements Listener
 		foreach ($this->plugin->games as $game) {
 			if (isset($game->players[$player->getRawUniqueId()])) {
 				if ($game->getState() == Game::STATE_RUNNING) {
-					if ($player->getY() < $game->getVoidLimit() && !$player->isSpectator()) {
+					if ($player->getPosition()->getY() < $game->getVoidLimit() && !$player->isSpectator()) {
 						$game->killPlayer($player);
 						$playerTeam = $this->plugin->getPlayerTeam($player);
 						$game->broadcastMessage($playerTeam->getColor() . $player->getName() . " " . TextFormat::GRAY . "was killed by void");
@@ -308,7 +308,7 @@ class GameListener implements Listener
 		$playerGame = $this->plugin->getPlayerGame($player);
 		if ($playerGame !== null) {
 			if ($playerGame->getState() == Game::STATE_LOBBY) {
-				$event->setCancelled();
+				$event->cancel();
 			} elseif ($event->getBlock() instanceof Bed) {
 				$blockPos = $event->getBlock()->asPosition();
 
@@ -333,7 +333,7 @@ class GameListener implements Listener
 						$teamObject = $game->teams[$name];
 						if ($name == $this->plugin->getPlayerTeam($player)->getName()) {
 							$player->sendMessage(TextFormat::RED . "You can't break your bed!");
-							$event->setCancelled();
+							$event->cancel();
 							return;
 						}
 						$event->setDrops([]);
@@ -343,12 +343,12 @@ class GameListener implements Listener
 				}
 			} else {
 				if ($playerGame->getState() == Game::STATE_RUNNING) {
-					if (!in_array(Utils::vectorToString(":", $block->asVector3()), $playerGame->placedBlocks)) {
-						$event->setCancelled();
+					if (!in_array(Utils::vectorToString(":", $block->getPosition()->asVector3()), $playerGame->placedBlocks)) {
+						$event->cancel();
 					}
-					if ($event->getBlock()->getId() == Block::TNT) {
+					if ($event->getBlock()->getId() == \pocketmine\block\BlockLegacyIds::TNT) {
 						$event->getBlock()->ignite();
-						$event->getBlock()->getLevel()->setBlock($event->getBlock()->asVector3(), Block::get(Block::AIR));
+						$event->getBlock()->getWorld()->setBlock($event->getBlock()->getPosition()->asVector3(), \pocketmine\block\BlockFactory::getInstance()->get(\pocketmine\block\BlockLegacyIds::AIR, 0));
 					}
 				}
 			}
@@ -358,11 +358,11 @@ class GameListener implements Listener
 
 	public function onEntityExplode(EntityExplodeEvent $event)
 	{
-		$game = $this->plugin->getGameByMap($event->getEntity()->getLevel()->getFolderName());
+		$game = $this->plugin->getGameByMap($event->getEntity()->getWorld()->getFolderName());
 		if ($game !== null) {
 			$expectedBlocks = [];
 			foreach ($event->getBlockList() as $block) {
-				if (in_array(Utils::vectorToString(":", $block->asVector3()), $game->placedBlocks, true)) {
+				if (in_array(Utils::vectorToString(":", $block->getPosition()->asVector3()), $game->placedBlocks, true)) {
 					$expectedBlocks[] = $block;
 				}
 			}
@@ -376,20 +376,20 @@ class GameListener implements Listener
 		$playerGame = $this->plugin->getPlayerGame($player);
 		if ($playerGame !== null) {
 			if ($playerGame->getState() == Game::STATE_LOBBY) {
-				$event->setCancelled();
+				$event->cancel();
 			} elseif ($playerGame->getState() == Game::STATE_RUNNING) {
 				foreach ($playerGame->teamInfo as $team => $data) {
 					$spawn = Utils::stringToVector(":", $data['spawnPos']);
 					if ($spawn->distance($event->getBlock()) < 6) {
-						$event->setCancelled();
+						$event->cancel();
 					} else {
 						$playerGame->placedBlocks[] = Utils::vectorToString(":", $event->getBlock());
 					}
 				}
 
-				if ($event->getBlock()->getId() == Block::TNT) {
+				if ($event->getBlock()->getId() == \pocketmine\block\BlockLegacyIds::TNT) {
 					$event->getBlock()->ignite();
-					$event->getBlock()->getLevel()->setBlock($event->getBlock()->asVector3(), Block::get(Block::AIR));
+					$event->getBlock()->getWorld()->setBlock($event->getBlock()->getPosition()->asVector3(), \pocketmine\block\BlockFactory::getInstance()->get(\pocketmine\block\BlockLegacyIds::AIR, 0));
 				}
 			}
 		}
@@ -404,7 +404,7 @@ class GameListener implements Listener
 			return;
 		}
 
-		foreach ($player->getLevel()->getNearbyEntities($player->getBoundingBox()->expandedCopy(5, 5, 5), $player) as $e) {
+		foreach ($player->getWorld()->getNearbyEntities($player->getBoundingBox()->expandedCopy(5, 5, 5), $player) as $e) {
 			if ($e instanceof Player) {
 				continue;
 			}
@@ -432,7 +432,7 @@ class GameListener implements Listener
 			if ($entity instanceof Player && isset($game->players[$entity->getRawUniqueId()])) {
 
 				if ($game->getState() == Game::STATE_LOBBY) {
-					$event->setCancelled();
+					$event->cancel();
 					return;
 				}
 
@@ -446,20 +446,20 @@ class GameListener implements Listener
 						$playerTeam = $this->plugin->getPlayerTeam($entity);
 
 						if ($damagerTeam->getName() == $playerTeam->getName()) {
-							$event->setCancelled();
+							$event->cancel();
 						}
 					}
 				}
 
 				if ($event->getFinalDamage() >= $entity->getHealth()) {
 					$game->killPlayer($entity);
-					$event->setCancelled();
+					$event->cancel();
 
 
 				}
 
 			} elseif (isset($game->npcs[$entity->getId()])) {
-				$event->setCancelled();
+				$event->cancel();
 
 				if ($event instanceof EntityDamageByEntityEvent) {
 					$damager = $event->getDamager();
@@ -499,20 +499,20 @@ class GameListener implements Listener
         $menu->setName("Shop Item");
         $menu->setListener([$this, "transactionZone"]);
         $inv = $menu->getInventory();
-        $inv->setItem(1, Item::get(159, 0, 1)->setCustomName("§fBlocks"));
-        $inv->setItem(2, Item::get(283, 0, 1)->setCustomName("§fMale"));
-        $inv->setItem(3, Item::get(301, 0, 1)->setCustomName("§fArmor"));
-        $inv->setItem(4, Item::get(274, 0, 1)->setCustomName("§fTools"));
-        $inv->setItem(5, Item::get(261, 0, 1)->setCustomName("§fBow & Arrow"));
-        $inv->setItem(6, Item::get(117, 0, 1)->setCustomName("§fPotion"));
-        $inv->setItem(7, Item::get(46, 0, 1)->setCustomName("§fUtility"));
-        $inv->setItem(19, Item::get(35, 14, 16)->setCustomName("§eWool")->setLore(["\n§f4 Iron"]));
-        $inv->setItem(20, Item::get(159, 14, 16)->setCustomName("§eTerracotta")->setLore(["\n§f12 Iron"]));
-        $inv->setItem(21, Item::get(95, 6, 4)->setCustomName("§eBlast Protection Glass")->setLore(["\n§f12 Iron"]));
-        $inv->setItem(22, Item::get(121, 0, 12)->setCustomName("§eEnd Stone")->setLore(["\n§f24 Iron"]));
-        $inv->setItem(23, Item::get(65, 0, 16)->setCustomName("§eLadder")->setLore(["\n§f4 Iron"]));
-        $inv->setItem(24, Item::get(5, 0, 16)->setCustomName("§eOak Wood")->setLore(["\n§64 Gold"]));
-        $inv->setItem(25, Item::get(49, 0, 4)->setCustomName("§eObsidian")->setLore(["\n§24 Emerlad"]));
+        $inv->setItem(1, \pocketmine\item\ItemFactory::getInstance()->get(159, 0, 1)->setCustomName("§fBlocks"));
+        $inv->setItem(2, \pocketmine\item\ItemFactory::getInstance()->get(283, 0, 1)->setCustomName("§fMale"));
+        $inv->setItem(3, \pocketmine\item\ItemFactory::getInstance()->get(301, 0, 1)->setCustomName("§fArmor"));
+        $inv->setItem(4, \pocketmine\item\ItemFactory::getInstance()->get(274, 0, 1)->setCustomName("§fTools"));
+        $inv->setItem(5, \pocketmine\item\ItemFactory::getInstance()->get(261, 0, 1)->setCustomName("§fBow & Arrow"));
+        $inv->setItem(6, \pocketmine\item\ItemFactory::getInstance()->get(117, 0, 1)->setCustomName("§fPotion"));
+        $inv->setItem(7, \pocketmine\item\ItemFactory::getInstance()->get(46, 0, 1)->setCustomName("§fUtility"));
+        $inv->setItem(19, \pocketmine\item\ItemFactory::getInstance()->get(35, 14, 16)->setCustomName("§eWool")->setLore(["\n§f4 Iron"]));
+        $inv->setItem(20, \pocketmine\item\ItemFactory::getInstance()->get(159, 14, 16)->setCustomName("§eTerracotta")->setLore(["\n§f12 Iron"]));
+        $inv->setItem(21, \pocketmine\item\ItemFactory::getInstance()->get(95, 6, 4)->setCustomName("§eBlast Protection Glass")->setLore(["\n§f12 Iron"]));
+        $inv->setItem(22, \pocketmine\item\ItemFactory::getInstance()->get(121, 0, 12)->setCustomName("§eEnd Stone")->setLore(["\n§f24 Iron"]));
+        $inv->setItem(23, \pocketmine\item\ItemFactory::getInstance()->get(65, 0, 16)->setCustomName("§eLadder")->setLore(["\n§f4 Iron"]));
+        $inv->setItem(24, \pocketmine\item\ItemFactory::getInstance()->get(5, 0, 16)->setCustomName("§eOak Wood")->setLore(["\n§64 Gold"]));
+        $inv->setItem(25, \pocketmine\item\ItemFactory::getInstance()->get(49, 0, 4)->setCustomName("§eObsidian")->setLore(["\n§24 Emerlad"]));
         $menu->send($damager);
     }
 	
@@ -527,22 +527,22 @@ class GameListener implements Listener
             $block->readonly();
             $block->setName("Shop Item");
             $block->setListener([$this, "transactionZone"]);
-            $sender->getLevel()->addSound(new PopSound($sender));
+            $sender->getWorld()->addSound(new PopSound($sender));
             $inv = $block->getInventory();
-            $inv->setItem(1, Item::get(159, 0, 1)->setCustomName("§fBlocks"));
-            $inv->setItem(2, Item::get(283, 0, 1)->setCustomName("§fMale"));
-            $inv->setItem(3, Item::get(301, 0, 1)->setCustomName("§fArmor"));
-            $inv->setItem(4, Item::get(274, 0, 1)->setCustomName("§fTools"));
-            $inv->setItem(5, Item::get(261, 0, 1)->setCustomName("§fBow & Arrow"));
-            $inv->setItem(6, Item::get(117, 0, 1)->setCustomName("§fPotion"));
-            $inv->setItem(7, Item::get(46, 0, 1)->setCustomName("§fUtility"));
-            $inv->setItem(19, Item::get(35, 14, 16)->setCustomName("§eWool")->setLore(["\n§f4 Iron"]));
-            $inv->setItem(20, Item::get(159, 14, 16)->setCustomName("§eTerracotta")->setLore(["\n§f12 Iron"]));
-            $inv->setItem(21, Item::get(95, 6, 4)->setCustomName("§eBlast Protection Glass")->setLore(["\n§f12 Iron"]));
-            $inv->setItem(22, Item::get(121, 0, 12)->setCustomName("§eEnd Stone")->setLore(["\n§f24 Iron"]));
-            $inv->setItem(23, Item::get(65, 0, 16)->setCustomName("§eLadder")->setLore(["\n§f4 Iron"]));
-            $inv->setItem(24, Item::get(5, 0, 16)->setCustomName("§eOak Wood")->setLore(["\n§64 Gold"]));
-            $inv->setItem(25, Item::get(49, 0, 4)->setCustomName("§eObsidian")->setLore(["\n§24 Emerlad"]));
+            $inv->setItem(1, \pocketmine\item\ItemFactory::getInstance()->get(159, 0, 1)->setCustomName("§fBlocks"));
+            $inv->setItem(2, \pocketmine\item\ItemFactory::getInstance()->get(283, 0, 1)->setCustomName("§fMale"));
+            $inv->setItem(3, \pocketmine\item\ItemFactory::getInstance()->get(301, 0, 1)->setCustomName("§fArmor"));
+            $inv->setItem(4, \pocketmine\item\ItemFactory::getInstance()->get(274, 0, 1)->setCustomName("§fTools"));
+            $inv->setItem(5, \pocketmine\item\ItemFactory::getInstance()->get(261, 0, 1)->setCustomName("§fBow & Arrow"));
+            $inv->setItem(6, \pocketmine\item\ItemFactory::getInstance()->get(117, 0, 1)->setCustomName("§fPotion"));
+            $inv->setItem(7, \pocketmine\item\ItemFactory::getInstance()->get(46, 0, 1)->setCustomName("§fUtility"));
+            $inv->setItem(19, \pocketmine\item\ItemFactory::getInstance()->get(35, 14, 16)->setCustomName("§eWool")->setLore(["\n§f4 Iron"]));
+            $inv->setItem(20, \pocketmine\item\ItemFactory::getInstance()->get(159, 14, 16)->setCustomName("§eTerracotta")->setLore(["\n§f12 Iron"]));
+            $inv->setItem(21, \pocketmine\item\ItemFactory::getInstance()->get(95, 6, 4)->setCustomName("§eBlast Protection Glass")->setLore(["\n§f12 Iron"]));
+            $inv->setItem(22, \pocketmine\item\ItemFactory::getInstance()->get(121, 0, 12)->setCustomName("§eEnd Stone")->setLore(["\n§f24 Iron"]));
+            $inv->setItem(23, \pocketmine\item\ItemFactory::getInstance()->get(65, 0, 16)->setCustomName("§eLadder")->setLore(["\n§f4 Iron"]));
+            $inv->setItem(24, \pocketmine\item\ItemFactory::getInstance()->get(5, 0, 16)->setCustomName("§eOak Wood")->setLore(["\n§64 Gold"]));
+            $inv->setItem(25, \pocketmine\item\ItemFactory::getInstance()->get(49, 0, 4)->setCustomName("§eObsidian")->setLore(["\n§24 Emerlad"]));
             $block->send($sender);
         }
         //End Block Menu
@@ -553,23 +553,23 @@ class GameListener implements Listener
             $male->readonly();
             $male->setName("Shop Item");
             $male->setListener([$this, "transactionZone"]);
-            $sender->getLevel()->addSound(new PopSound($sender));
+            $sender->getWorld()->addSound(new PopSound($sender));
             $inv = $male->getInventory();
-            $inv->setItem(1, Item::get(159, 0, 1)->setCustomName("§fBlocks"));
-            $inv->setItem(2, Item::get(283, 0, 1)->setCustomName("§fMale"));
-            $inv->setItem(3, Item::get(301, 0, 1)->setCustomName("§fArmor"));
-            $inv->setItem(4, Item::get(274, 0, 1)->setCustomName("§fTools"));
-            $inv->setItem(5, Item::get(261, 0, 1)->setCustomName("§fBow & Arrow"));
-            $inv->setItem(6, Item::get(117, 0, 1)->setCustomName("§fPotion"));
-            $inv->setItem(7, Item::get(46, 0, 1)->setCustomName("§fUtility"));
-            $inv->setItem(19, Item::get(272, 0, 1)->setCustomName("§eStone Sword")->setLore(["\n§f10 Iron"]));
-            $inv->setItem(20, Item::get(267, 0, 1)->setCustomName("§eIron Sword")->setLore(["\n§67 Gold"]));
-            $inv->setItem(21, Item::get(276, 0, 1)->setCustomName("§eDiamond Sword")->setLore(["\n§24 Emerlad"]));
+            $inv->setItem(1, \pocketmine\item\ItemFactory::getInstance()->get(159, 0, 1)->setCustomName("§fBlocks"));
+            $inv->setItem(2, \pocketmine\item\ItemFactory::getInstance()->get(283, 0, 1)->setCustomName("§fMale"));
+            $inv->setItem(3, \pocketmine\item\ItemFactory::getInstance()->get(301, 0, 1)->setCustomName("§fArmor"));
+            $inv->setItem(4, \pocketmine\item\ItemFactory::getInstance()->get(274, 0, 1)->setCustomName("§fTools"));
+            $inv->setItem(5, \pocketmine\item\ItemFactory::getInstance()->get(261, 0, 1)->setCustomName("§fBow & Arrow"));
+            $inv->setItem(6, \pocketmine\item\ItemFactory::getInstance()->get(117, 0, 1)->setCustomName("§fPotion"));
+            $inv->setItem(7, \pocketmine\item\ItemFactory::getInstance()->get(46, 0, 1)->setCustomName("§fUtility"));
+            $inv->setItem(19, \pocketmine\item\ItemFactory::getInstance()->get(272, 0, 1)->setCustomName("§eStone Sword")->setLore(["\n§f10 Iron"]));
+            $inv->setItem(20, \pocketmine\item\ItemFactory::getInstance()->get(267, 0, 1)->setCustomName("§eIron Sword")->setLore(["\n§67 Gold"]));
+            $inv->setItem(21, \pocketmine\item\ItemFactory::getInstance()->get(276, 0, 1)->setCustomName("§eDiamond Sword")->setLore(["\n§24 Emerlad"]));
             //Variable Enchantment Punch I
             $punch = Enchantment::getEnchantment(19);
             $punchIns = new EnchantmentInstance($punch, 1);
             //Variable Item Stick
-            $stick = Item::get(280, 0, 1);
+            $stick = \pocketmine\item\ItemFactory::getInstance()->get(280, 0, 1);
             //Variable Item Stick AddEnchantment
             $stick->addEnchantment($punchIns);
             $inv->setItem(22, ($stick)->setCustomName("§eKnockback Stick")->setLore(["\n§65 Gold"]));
@@ -583,18 +583,18 @@ class GameListener implements Listener
             $armor->readonly();
             $armor->setName("Shop Item");
             $armor->setListener([$this, "transactionZone"]);
-            $sender->getLevel()->addSound(new PopSound($sender));
+            $sender->getWorld()->addSound(new PopSound($sender));
             $inv = $armor->getInventory();
-            $inv->setItem(1, Item::get(159, 0, 1)->setCustomName("§fBlocks"));
-            $inv->setItem(2, Item::get(283, 0, 1)->setCustomName("§fMale"));
-            $inv->setItem(3, Item::get(305, 0, 1)->setCustomName("§fArmor"));
-            $inv->setItem(4, Item::get(274, 0, 1)->setCustomName("§fTools"));
-            $inv->setItem(5, Item::get(261, 0, 1)->setCustomName("§fBow & Arrow"));
-            $inv->setItem(6, Item::get(117, 0, 1)->setCustomName("§fPotion"));
-            $inv->setItem(7, Item::get(46, 0, 1)->setCustomName("§fUtility"));
-            $inv->setItem(19, Item::get(305, 1, 1)->setCustomName("§ePermanen Armor")->setLore(["\n§f10 Iron"]));
-            $inv->setItem(20, Item::get(309, 0, 1)->setCustomName("§ePermanen Armor Iron")->setLore(["\n§67 Gold"]));
-            $inv->setItem(21, Item::get(313, 0, 1)->setCustomName("§ePermanen Armor Diamon")->setLore(["\n§24 Emerlad"]));
+            $inv->setItem(1, \pocketmine\item\ItemFactory::getInstance()->get(159, 0, 1)->setCustomName("§fBlocks"));
+            $inv->setItem(2, \pocketmine\item\ItemFactory::getInstance()->get(283, 0, 1)->setCustomName("§fMale"));
+            $inv->setItem(3, \pocketmine\item\ItemFactory::getInstance()->get(305, 0, 1)->setCustomName("§fArmor"));
+            $inv->setItem(4, \pocketmine\item\ItemFactory::getInstance()->get(274, 0, 1)->setCustomName("§fTools"));
+            $inv->setItem(5, \pocketmine\item\ItemFactory::getInstance()->get(261, 0, 1)->setCustomName("§fBow & Arrow"));
+            $inv->setItem(6, \pocketmine\item\ItemFactory::getInstance()->get(117, 0, 1)->setCustomName("§fPotion"));
+            $inv->setItem(7, \pocketmine\item\ItemFactory::getInstance()->get(46, 0, 1)->setCustomName("§fUtility"));
+            $inv->setItem(19, \pocketmine\item\ItemFactory::getInstance()->get(305, 1, 1)->setCustomName("§ePermanen Armor")->setLore(["\n§f10 Iron"]));
+            $inv->setItem(20, \pocketmine\item\ItemFactory::getInstance()->get(309, 0, 1)->setCustomName("§ePermanen Armor Iron")->setLore(["\n§67 Gold"]));
+            $inv->setItem(21, \pocketmine\item\ItemFactory::getInstance()->get(313, 0, 1)->setCustomName("§ePermanen Armor Diamon")->setLore(["\n§24 Emerlad"]));
             $armor->send($sender);
         }
         //End Armor Zone
@@ -605,21 +605,21 @@ class GameListener implements Listener
             $tools->readonly();
             $tools->setName("Shop Item");
             $tools->setListener([$this, "transactionZone"]);
-            $sender->getLevel()->addSound(new PopSound($sender));
+            $sender->getWorld()->addSound(new PopSound($sender));
             $inv = $tools->getInventory();
-            $inv->setItem(1, Item::get(159, 0, 1)->setCustomName("§fBlocks"));
-            $inv->setItem(2, Item::get(283, 0, 1)->setCustomName("§fMale"));
-            $inv->setItem(3, Item::get(301, 0, 1)->setCustomName("§fArmor"));
-            $inv->setItem(4, Item::get(274, 0, 1)->setCustomName("§fTools"));
-            $inv->setItem(5, Item::get(261, 0, 1)->setCustomName("§fBow & Arrow"));
-            $inv->setItem(6, Item::get(117, 0, 1)->setCustomName("§fPotion"));
-            $inv->setItem(7, Item::get(46, 0, 1)->setCustomName("§fUtility"));
-            $inv->setItem(19, Item::get(359, 0, 1)->setCustomName("§ePermanen Shears")->setLore(["\n§f20 Iron"]));
-            $inv->setItem(20, Item::get(270, 1, 1)->setCustomName("§eWood Pickaxe")->setLore(["\n§f10 Iron"]));
-            $inv->setItem(21, Item::get(274, 0, 1)->setCustomName("§eStone Pickaxe")->setLore(["\n§f20 Iron"]));
-            $inv->setItem(22, Item::get(257, 0, 1)->setCustomName("§eIron Pickaxe")->setLore(["\n§610 Gold"]));
-            $inv->setItem(23, Item::get(278, 0, 1)->setCustomName("§eDiamond Pickaxe")->setLore(["\n§615 Gold"]));
-            $inv->setItem(24, Item::get(279, 0, 1)->setCustomName("§eDiamond Axe")->setLore(["\n§612 Gold"]));
+            $inv->setItem(1, \pocketmine\item\ItemFactory::getInstance()->get(159, 0, 1)->setCustomName("§fBlocks"));
+            $inv->setItem(2, \pocketmine\item\ItemFactory::getInstance()->get(283, 0, 1)->setCustomName("§fMale"));
+            $inv->setItem(3, \pocketmine\item\ItemFactory::getInstance()->get(301, 0, 1)->setCustomName("§fArmor"));
+            $inv->setItem(4, \pocketmine\item\ItemFactory::getInstance()->get(274, 0, 1)->setCustomName("§fTools"));
+            $inv->setItem(5, \pocketmine\item\ItemFactory::getInstance()->get(261, 0, 1)->setCustomName("§fBow & Arrow"));
+            $inv->setItem(6, \pocketmine\item\ItemFactory::getInstance()->get(117, 0, 1)->setCustomName("§fPotion"));
+            $inv->setItem(7, \pocketmine\item\ItemFactory::getInstance()->get(46, 0, 1)->setCustomName("§fUtility"));
+            $inv->setItem(19, \pocketmine\item\ItemFactory::getInstance()->get(359, 0, 1)->setCustomName("§ePermanen Shears")->setLore(["\n§f20 Iron"]));
+            $inv->setItem(20, \pocketmine\item\ItemFactory::getInstance()->get(270, 1, 1)->setCustomName("§eWood Pickaxe")->setLore(["\n§f10 Iron"]));
+            $inv->setItem(21, \pocketmine\item\ItemFactory::getInstance()->get(274, 0, 1)->setCustomName("§eStone Pickaxe")->setLore(["\n§f20 Iron"]));
+            $inv->setItem(22, \pocketmine\item\ItemFactory::getInstance()->get(257, 0, 1)->setCustomName("§eIron Pickaxe")->setLore(["\n§610 Gold"]));
+            $inv->setItem(23, \pocketmine\item\ItemFactory::getInstance()->get(278, 0, 1)->setCustomName("§eDiamond Pickaxe")->setLore(["\n§615 Gold"]));
+            $inv->setItem(24, \pocketmine\item\ItemFactory::getInstance()->get(279, 0, 1)->setCustomName("§eDiamond Axe")->setLore(["\n§612 Gold"]));
             $tools->send($sender);
         }
         //End Tools Menu
@@ -630,25 +630,25 @@ class GameListener implements Listener
             $arwow->readonly();
             $arwow->setName("Shop Item");
             $arwow->setListener([$this, "transactionZone"]);
-            $sender->getLevel()->addSound(new PopSound($sender));
+            $sender->getWorld()->addSound(new PopSound($sender));
             $inv = $arwow->getInventory();
-            $inv->setItem(1, Item::get(159, 0, 1)->setCustomName("§fBlocks"));
-            $inv->setItem(2, Item::get(283, 0, 1)->setCustomName("§fMale"));
-            $inv->setItem(3, Item::get(301, 0, 1)->setCustomName("§fArmor"));
-            $inv->setItem(4, Item::get(274, 0, 1)->setCustomName("§fTools"));
-            $inv->setItem(5, Item::get(261, 0, 1)->setCustomName("§fBow & Arrow"));
-            $inv->setItem(6, Item::get(117, 0, 1)->setCustomName("§fPotion"));
-            $inv->setItem(7, Item::get(46, 0, 1)->setCustomName("§fUtility"));
-            $inv->setItem(19, Item::get(262, 0, 8)->setCustomName("§eArrow")->setLore(["\n§62 Gold"]));
-            $inv->setItem(20, Item::get(261, 1, 1)->setCustomName("§eBow")->setLore(["\n§612 Gold"]));
+            $inv->setItem(1, \pocketmine\item\ItemFactory::getInstance()->get(159, 0, 1)->setCustomName("§fBlocks"));
+            $inv->setItem(2, \pocketmine\item\ItemFactory::getInstance()->get(283, 0, 1)->setCustomName("§fMale"));
+            $inv->setItem(3, \pocketmine\item\ItemFactory::getInstance()->get(301, 0, 1)->setCustomName("§fArmor"));
+            $inv->setItem(4, \pocketmine\item\ItemFactory::getInstance()->get(274, 0, 1)->setCustomName("§fTools"));
+            $inv->setItem(5, \pocketmine\item\ItemFactory::getInstance()->get(261, 0, 1)->setCustomName("§fBow & Arrow"));
+            $inv->setItem(6, \pocketmine\item\ItemFactory::getInstance()->get(117, 0, 1)->setCustomName("§fPotion"));
+            $inv->setItem(7, \pocketmine\item\ItemFactory::getInstance()->get(46, 0, 1)->setCustomName("§fUtility"));
+            $inv->setItem(19, \pocketmine\item\ItemFactory::getInstance()->get(262, 0, 8)->setCustomName("§eArrow")->setLore(["\n§62 Gold"]));
+            $inv->setItem(20, \pocketmine\item\ItemFactory::getInstance()->get(261, 1, 1)->setCustomName("§eBow")->setLore(["\n§612 Gold"]));
             //Variable Enchantment Power I && Punch I
             $power = Enchantment::getEnchantment(19);
             $punch = Enchantment::getEnchantment(20);
             $powerIns = new EnchantmentInstance($power, 1);
             $punchIns = new EnchantmentInstance($punch, 1);
             //Variable Item Bow
-            $bowpower = Item::get(261, 2, 1);
-            $bowpower2 = Item::get(261, 3, 1);
+            $bowpower = \pocketmine\item\ItemFactory::getInstance()->get(261, 2, 1);
+            $bowpower2 = \pocketmine\item\ItemFactory::getInstance()->get(261, 3, 1);
             //Variable Item Bow AddEnchantment
             $bowpower->addEnchantment($powerIns);
             $bowpower2->addEnchantment($powerIns);
@@ -665,18 +665,18 @@ class GameListener implements Listener
             $potion->readonly();
             $potion->setName("Shop Item");
             $potion->setListener([$this, "transactionZone"]);
-            $sender->getLevel()->addSound(new PopSound($sender));
+            $sender->getWorld()->addSound(new PopSound($sender));
             $inv = $potion->getInventory();
-            $inv->setItem(1, Item::get(159, 0, 1)->setCustomName("§fBlocks"));
-            $inv->setItem(2, Item::get(283, 0, 1)->setCustomName("§fMale"));
-            $inv->setItem(3, Item::get(301, 0, 1)->setCustomName("§fArmor"));
-            $inv->setItem(4, Item::get(274, 0, 1)->setCustomName("§fTools"));
-            $inv->setItem(5, Item::get(261, 0, 1)->setCustomName("§fBow & Arrow"));
-            $inv->setItem(6, Item::get(117, 0, 1)->setCustomName("§fPotion"));
-            $inv->setItem(7, Item::get(46, 0, 1)->setCustomName("§fUtility"));
-            $inv->setItem(19, Item::get(373, 14, 1)->setCustomName("§eSpeed Potion (45 Second)")->setLore(["\n§21 Emerlad"]));
-            $inv->setItem(20, Item::get(373, 9, 1)->setCustomName("§eJump Potion II (45 Second)")->setLore(["\n§21 Emerlad"]));
-            $inv->setItem(21, Item::get(373, 7, 1)->setCustomName("§eInvisible Potion (30 Second)")->setLore(["\n§22 Emerlad"]));
+            $inv->setItem(1, \pocketmine\item\ItemFactory::getInstance()->get(159, 0, 1)->setCustomName("§fBlocks"));
+            $inv->setItem(2, \pocketmine\item\ItemFactory::getInstance()->get(283, 0, 1)->setCustomName("§fMale"));
+            $inv->setItem(3, \pocketmine\item\ItemFactory::getInstance()->get(301, 0, 1)->setCustomName("§fArmor"));
+            $inv->setItem(4, \pocketmine\item\ItemFactory::getInstance()->get(274, 0, 1)->setCustomName("§fTools"));
+            $inv->setItem(5, \pocketmine\item\ItemFactory::getInstance()->get(261, 0, 1)->setCustomName("§fBow & Arrow"));
+            $inv->setItem(6, \pocketmine\item\ItemFactory::getInstance()->get(117, 0, 1)->setCustomName("§fPotion"));
+            $inv->setItem(7, \pocketmine\item\ItemFactory::getInstance()->get(46, 0, 1)->setCustomName("§fUtility"));
+            $inv->setItem(19, \pocketmine\item\ItemFactory::getInstance()->get(373, 14, 1)->setCustomName("§eSpeed Potion (45 Second)")->setLore(["\n§21 Emerlad"]));
+            $inv->setItem(20, \pocketmine\item\ItemFactory::getInstance()->get(373, 9, 1)->setCustomName("§eJump Potion II (45 Second)")->setLore(["\n§21 Emerlad"]));
+            $inv->setItem(21, \pocketmine\item\ItemFactory::getInstance()->get(373, 7, 1)->setCustomName("§eInvisible Potion (30 Second)")->setLore(["\n§22 Emerlad"]));
             $potion->send($sender);
         }
         //End Potion Menu
@@ -687,24 +687,24 @@ class GameListener implements Listener
             $util->readonly();
             $util->setName("Shop Item");
             $util->setListener([$this, "transactionZone"]);
-            $sender->getLevel()->addSound(new PopSound($sender));
+            $sender->getWorld()->addSound(new PopSound($sender));
             $inv = $util->getInventory();
-            $inv->setItem(1, Item::get(159, 0, 1)->setCustomName("§fBlocks"));
-            $inv->setItem(2, Item::get(283, 0, 1)->setCustomName("§fMale"));
-            $inv->setItem(3, Item::get(301, 0, 1)->setCustomName("§fArmor"));
-            $inv->setItem(4, Item::get(274, 0, 1)->setCustomName("§fTools"));
-            $inv->setItem(5, Item::get(261, 0, 1)->setCustomName("§fBow & Arrow"));
-            $inv->setItem(6, Item::get(117, 0, 1)->setCustomName("§fPotion"));
-            $inv->setItem(7, Item::get(46, 0, 1)->setCustomName("§fUtility"));
-            $inv->setItem(19, Item::get(322, 0, 1)->setCustomName("§eGolden Apple")->setLore(["\n§63 Gold"]));
-            $inv->setItem(20, Item::get(332, 0, 1)->setCustomName("§eBedbug")->setLore(["\n§f40 Iron"]));
-            $inv->setItem(21, Item::get(383, 93, 1)->setCustomName("§eDream Defender")->setLore(["\n§f120 Iron"]));
-            $inv->setItem(22, Item::get(385, 0, 1)->setCustomName("§eFireball")->setLore(["\n§f40 Iron"]));
-            $inv->setItem(23, Item::get(46, 0, 1)->setCustomName("§eTNT")->setLore(["\n§64 Gold"]));
-            $inv->setItem(24, Item::get(368, 0, 1)->setCustomName("§eEnderpearl")->setLore(["\n§24 Emerald"]));
-            $inv->setItem(25, Item::get(345, 0, 1)->setCustomName("§ePlayer Tracker")->setLore(["\n§23 Emerald"]));
-            $inv->setItem(28, Item::get(344, 0, 1)->setCustomName("§eBridge Egg")->setLore(["\n§22 Emerlad"]));
-            $inv->setItem(29, Item::get(335, 0, 1)->setCustomName("§eMagick Milk")->setLore(["\n§64 Gold"]));
+            $inv->setItem(1, \pocketmine\item\ItemFactory::getInstance()->get(159, 0, 1)->setCustomName("§fBlocks"));
+            $inv->setItem(2, \pocketmine\item\ItemFactory::getInstance()->get(283, 0, 1)->setCustomName("§fMale"));
+            $inv->setItem(3, \pocketmine\item\ItemFactory::getInstance()->get(301, 0, 1)->setCustomName("§fArmor"));
+            $inv->setItem(4, \pocketmine\item\ItemFactory::getInstance()->get(274, 0, 1)->setCustomName("§fTools"));
+            $inv->setItem(5, \pocketmine\item\ItemFactory::getInstance()->get(261, 0, 1)->setCustomName("§fBow & Arrow"));
+            $inv->setItem(6, \pocketmine\item\ItemFactory::getInstance()->get(117, 0, 1)->setCustomName("§fPotion"));
+            $inv->setItem(7, \pocketmine\item\ItemFactory::getInstance()->get(46, 0, 1)->setCustomName("§fUtility"));
+            $inv->setItem(19, \pocketmine\item\ItemFactory::getInstance()->get(322, 0, 1)->setCustomName("§eGolden Apple")->setLore(["\n§63 Gold"]));
+            $inv->setItem(20, \pocketmine\item\ItemFactory::getInstance()->get(332, 0, 1)->setCustomName("§eBedbug")->setLore(["\n§f40 Iron"]));
+            $inv->setItem(21, \pocketmine\item\ItemFactory::getInstance()->get(383, 93, 1)->setCustomName("§eDream Defender")->setLore(["\n§f120 Iron"]));
+            $inv->setItem(22, \pocketmine\item\ItemFactory::getInstance()->get(385, 0, 1)->setCustomName("§eFireball")->setLore(["\n§f40 Iron"]));
+            $inv->setItem(23, \pocketmine\item\ItemFactory::getInstance()->get(46, 0, 1)->setCustomName("§eTNT")->setLore(["\n§64 Gold"]));
+            $inv->setItem(24, \pocketmine\item\ItemFactory::getInstance()->get(368, 0, 1)->setCustomName("§eEnderpearl")->setLore(["\n§24 Emerald"]));
+            $inv->setItem(25, \pocketmine\item\ItemFactory::getInstance()->get(345, 0, 1)->setCustomName("§ePlayer Tracker")->setLore(["\n§23 Emerald"]));
+            $inv->setItem(28, \pocketmine\item\ItemFactory::getInstance()->get(344, 0, 1)->setCustomName("§eBridge Egg")->setLore(["\n§22 Emerlad"]));
+            $inv->setItem(29, \pocketmine\item\ItemFactory::getInstance()->get(335, 0, 1)->setCustomName("§eMagick Milk")->setLore(["\n§64 Gold"]));
             $util->send($sender);
         }
         //TransactionZone//
@@ -714,99 +714,99 @@ class GameListener implements Listener
         //Wool
         if($item->getId() == 35 && $item->getDamage() == 14){
             $inv = $sender->getInventory();
-            $item = Item::get(265, 0, 4);
+            $item = \pocketmine\item\ItemFactory::getInstance()->get(265, 0, 4);
             if($inv->contains($item)){
-                $inv->removeItem(Item::get(265, 0, 4));
-                $inv->addItem(Item::get(35, 14, 16));
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(265, 0, 4));
+                $inv->addItem(\pocketmine\item\ItemFactory::getInstance()->get(35, 14, 16));
                 $sender->sendMessage("§aYou bought §e16x §afor §f4 Iron");
-                $sender->getLevel()->addSound(new PopSound($sender));
+                $sender->getWorld()->addSound(new PopSound($sender));
             }else{
                 $sender->sendMessage("§cYour iron not enough");
-                $sender->getLevel()->addSound(new EndermanTeleportSound($sender));
+                $sender->getWorld()->addSound(new EndermanTeleportSound($sender));
             }
         }
         //Terracotta
         if($item->getId() == 159 && $item->getDamage() == 14){
             $inv = $sender->getInventory();
-            $item = Item::get(265, 0, 12);
+            $item = \pocketmine\item\ItemFactory::getInstance()->get(265, 0, 12);
             if($inv->contains($item)){
-                $inv->removeItem(Item::get(265, 0, 12));
-                $inv->addItem(Item::get(159, 14, 16));
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(265, 0, 12));
+                $inv->addItem(\pocketmine\item\ItemFactory::getInstance()->get(159, 14, 16));
                 $sender->sendMessage("§aYou bought §e16x §afor §f12 Iron");
-                $sender->getLevel()->addSound(new PopSound($sender));
+                $sender->getWorld()->addSound(new PopSound($sender));
             }else{
                 $sender->sendMessage("§cYour iron not enough");
-                $sender->getLevel()->addSound(new EndermanTeleportSound($sender));
+                $sender->getWorld()->addSound(new EndermanTeleportSound($sender));
             }
         }
         //Blast Protection Glass
         if($item->getId() == 95 && $item->getDamage() == 6){
             $inv = $sender->getInventory();
-            $item = Item::get(266, 0, 5);
+            $item = \pocketmine\item\ItemFactory::getInstance()->get(266, 0, 5);
             if($inv->contains($item)){
-                $inv->removeItem(Item::get(265, 0, 24));
-                $inv->addItem(Item::get(95, 6, 4));
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(265, 0, 24));
+                $inv->addItem(\pocketmine\item\ItemFactory::getInstance()->get(95, 6, 4));
                 $sender->sendMessage("§aYou bought §e6x §afor §f12 Iron");
-                $sender->getLevel()->addSound(new PopSound($sender));
+                $sender->getWorld()->addSound(new PopSound($sender));
             }else{
                 $sender->sendMessage("§cYour iron not enough");
-                $sender->getLevel()->addSound(new EndermanTeleportSound($sender));
+                $sender->getWorld()->addSound(new EndermanTeleportSound($sender));
             }
         }
         //End Stone
         if($item->getId() == 121 && $item->getDamage() == 0){
             $inv = $sender->getInventory();
-            $item = Item::get(266, 0, 5);
+            $item = \pocketmine\item\ItemFactory::getInstance()->get(266, 0, 5);
             if($inv->contains($item)){
-                $inv->removeItem(Item::get(265, 0, 24));
-                $inv->addItem(Item::get(121, 0, 12));
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(265, 0, 24));
+                $inv->addItem(\pocketmine\item\ItemFactory::getInstance()->get(121, 0, 12));
                 $sender->sendMessage("§aYou bought §e16x §afor §f12 Iron");
-                $sender->getLevel()->addSound(new PopSound($sender));
+                $sender->getWorld()->addSound(new PopSound($sender));
             }else{
                 $sender->sendMessage("§cYour iron not enough");
-                $sender->getLevel()->addSound(new EndermanTeleportSound($sender));
+                $sender->getWorld()->addSound(new EndermanTeleportSound($sender));
             }
         }
         //Ladder
         if($item->getId() == 65 && $item->getDamage() == 0){
             $inv = $sender->getInventory();
-            $item = Item::get(265, 0, 4);
+            $item = \pocketmine\item\ItemFactory::getInstance()->get(265, 0, 4);
             if($inv->contains($item)){
-                $inv->removeItem(Item::get(265, 0, 4));
-                $inv->addItem(Item::get(65, 0, 16));
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(265, 0, 4));
+                $inv->addItem(\pocketmine\item\ItemFactory::getInstance()->get(65, 0, 16));
                 $sender->sendMessage("§aYou bought §e16x §afor §f12 Iron");
-                $sender->getLevel()->addSound(new PopSound($sender));
+                $sender->getWorld()->addSound(new PopSound($sender));
             }else{
                 $sender->sendMessage("§cYour iron not enough");
-                $sender->getLevel()->addSound(new EndermanTeleportSound($sender));
+                $sender->getWorld()->addSound(new EndermanTeleportSound($sender));
             }
         }
         //Oak Wood Plank
         if($item->getId() == 5 && $item->getDamage() == 0){
             $inv = $sender->getInventory();
-            $item = Item::get(266, 0, 4);
+            $item = \pocketmine\item\ItemFactory::getInstance()->get(266, 0, 4);
             if($inv->contains($item)){
-                $inv->removeItem(Item::get(266, 0, 4));
-                $inv->addItem(Item::get(5, 0, 16));
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(266, 0, 4));
+                $inv->addItem(\pocketmine\item\ItemFactory::getInstance()->get(5, 0, 16));
                 $sender->sendMessage("§aYou bought §e16x §afor §64 gold");
-                $sender->getLevel()->addSound(new PopSound($sender));
+                $sender->getWorld()->addSound(new PopSound($sender));
             }else{
                 $sender->sendMessage("§cYour gold not enough");
-                $sender->getLevel()->addSound(new EndermanTeleportSound($sender));
+                $sender->getWorld()->addSound(new EndermanTeleportSound($sender));
             }
         }
         //Obsidian
         if($item->getId() == 49 && $item->getDamage() == 0){
             $inv = $sender->getInventory();
-            $item = Item::get(388, 0, 4);
+            $item = \pocketmine\item\ItemFactory::getInstance()->get(388, 0, 4);
             if($inv->contains($item)){
-                $inv->removeItem(Item::get(388, 0, 4));
-                $inv->addItem(Item::get(49, 0, 4));
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(388, 0, 4));
+                $inv->addItem(\pocketmine\item\ItemFactory::getInstance()->get(49, 0, 4));
                 $sender->sendMessage("§aYou bought §e16x §afor §24 Emerald");
-                $sender->getLevel()->addSound(new PopSound($sender));
+                $sender->getWorld()->addSound(new PopSound($sender));
             }else{
                 $sender->sendMessage("§cYour emerald not enough");
-                $sender->getLevel()->addSound(new EndermanTeleportSound($sender));
+                $sender->getWorld()->addSound(new EndermanTeleportSound($sender));
             }
         }
         //End Block Zone
@@ -815,67 +815,67 @@ class GameListener implements Listener
         //Stone Sword
         if($item->getId() == 272 && $item->getDamage() == 0){
             $inv = $sender->getInventory();
-            $item = Item::get(265, 0, 10);
+            $item = \pocketmine\item\ItemFactory::getInstance()->get(265, 0, 10);
             if($inv->contains($item)){
-                $inv->removeItem(Item::get(265, 0, 10));
-                $inv->removeItem(Item::get(268, 0, 1));//Remove Wooden Sword
-                $inv->addItem(Item::get(272, 0, 1));
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(265, 0, 10));
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(268, 0, 1));//Remove Wooden Sword
+                $inv->addItem(\pocketmine\item\ItemFactory::getInstance()->get(272, 0, 1));
                 $sender->sendMessage("§aYou bought §eStone sword §afor §f10 Iron");
-                $sender->getLevel()->addSound(new PopSound($sender));
+                $sender->getWorld()->addSound(new PopSound($sender));
             }else{
                 $sender->sendMessage("§cYour iron not enough");
-                $sender->getLevel()->addSound(new EndermanTeleportSound($sender));
+                $sender->getWorld()->addSound(new EndermanTeleportSound($sender));
             }
         }
         //Iron Sword
         if($item->getId() == 267 && $item->getDamage() == 0){
             $inv = $sender->getInventory();
-            $item = Item::get(266, 0, 7);
+            $item = \pocketmine\item\ItemFactory::getInstance()->get(266, 0, 7);
             if($inv->contains($item)){
-                $inv->removeItem(Item::get(265, 0, 7));
-                $inv->removeItem(Item::get(268, 0, 1));//Remove Wooden Sword
-                $inv->removeItem(Item::get(272, 0, 1));//Remove Stone Sword
-                $inv->addItem(Item::get(267, 0, 1));
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(265, 0, 7));
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(268, 0, 1));//Remove Wooden Sword
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(272, 0, 1));//Remove Stone Sword
+                $inv->addItem(\pocketmine\item\ItemFactory::getInstance()->get(267, 0, 1));
                 $sender->sendMessage("§aYou bought §eIron sword §afor §67 Gold");
-                $sender->getLevel()->addSound(new PopSound($sender));
+                $sender->getWorld()->addSound(new PopSound($sender));
             }else{
                 $sender->sendMessage("§cYour gold not enough");
-                $sender->getLevel()->addSound(new EndermanTeleportSound($sender));
+                $sender->getWorld()->addSound(new EndermanTeleportSound($sender));
             }
         }
         //Diamond Sword
         if($item->getId() == 276 && $item->getDamage() == 0){
             $inv = $sender->getInventory();
-            $item = Item::get(388, 0, 4);
+            $item = \pocketmine\item\ItemFactory::getInstance()->get(388, 0, 4);
             if($inv->contains($item)){
-                $inv->removeItem(Item::get(388, 0, 4));
-                $inv->removeItem(Item::get(268, 0, 1));//Remove Wooden Sword
-                $inv->removeItem(Item::get(272, 0, 1));//Remove Stone Sword
-                $inv->removeItem(Item::get(267, 0, 1));//Remove Iron Sword
-                $inv->addItem(Item::get(276, 0, 1));
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(388, 0, 4));
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(268, 0, 1));//Remove Wooden Sword
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(272, 0, 1));//Remove Stone Sword
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(267, 0, 1));//Remove Iron Sword
+                $inv->addItem(\pocketmine\item\ItemFactory::getInstance()->get(276, 0, 1));
                 $sender->sendMessage("§aYou bought §eDiamond sword §afor §24 Emerald");
-                $sender->getLevel()->addSound(new PopSound($sender));
+                $sender->getWorld()->addSound(new PopSound($sender));
             }else{
                 $sender->sendMessage("§cYour emerald not enough");
-                $sender->getLevel()->addSound(new EndermanTeleportSound($sender));
+                $sender->getWorld()->addSound(new EndermanTeleportSound($sender));
             }
         }
         //Kbockback Stick
         if($item->getId() == 280 && $item->getDamage() == 0){
             $inv = $sender->getInventory();
-            $item = Item::get(266, 0, 5);
+            $item = \pocketmine\item\ItemFactory::getInstance()->get(266, 0, 5);
             if($inv->contains($item)){
-                $inv->removeItem(Item::get(266, 0, 5));
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(266, 0, 5));
                 $punch = Enchantment::getEnchantment(19);
                 $punchIns = new EnchantmentInstance($punch, 1);
-                $stick = Item::get(280, 0, 1);
+                $stick = \pocketmine\item\ItemFactory::getInstance()->get(280, 0, 1);
                 $stick->addEnchantment($punchIns);
                 $inv->addItem($stick);
                 $sender->sendMessage("§aYou bought §eKbockback stick §afor §f12 Iron");
-                $sender->getLevel()->addSound(new PopSound($sender));
+                $sender->getWorld()->addSound(new PopSound($sender));
             }else{
                 $sender->sendMessage("§cYour iron not enough");
-                $sender->getLevel()->addSound(new EndermanTeleportSound($sender));
+                $sender->getWorld()->addSound(new EndermanTeleportSound($sender));
             }
         }
         //End Male Zone
@@ -885,49 +885,49 @@ class GameListener implements Listener
         //Permanen Armor
         if($item->getId() == 305 && $item->getDamage() == 1){
             $inv = $sender->getInventory();
-            $item = Item::get(265, 0, 40);
+            $item = \pocketmine\item\ItemFactory::getInstance()->get(265, 0, 40);
             if($inv->contains($item)){
-                $inv->removeItem(Item::get(265, 0, 40));
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(265, 0, 40));
                 $sender->getArmorInventory()->clearAll();
-                $sender->getArmorInventory()->setLeggings(Item::get(304, 0, 1));
-                $sender->getArmorInventory()->setBoots(Item::get(305, 0, 1));
+                $sender->getArmorInventory()->setLeggings(\pocketmine\item\ItemFactory::getInstance()->get(304, 0, 1));
+                $sender->getArmorInventory()->setBoots(\pocketmine\item\ItemFactory::getInstance()->get(305, 0, 1));
                 $sender->sendMessage("§aYou bought §ePermanen armor §afor §f140 Iron");
-                $sender->getLevel()->addSound(new PopSound($sender));
+                $sender->getWorld()->addSound(new PopSound($sender));
             }else{
                 $sender->sendMessage("§cYour iron not enough");
-                $sender->getLevel()->addSound(new EndermanTeleportSound($sender));
+                $sender->getWorld()->addSound(new EndermanTeleportSound($sender));
             }
         }
         //Permanen Armor Iron
         if($item->getId() == 309 && $item->getDamage() == 0){
             $inv = $sender->getInventory();
-            $item = Item::get(266, 0, 12);
+            $item = \pocketmine\item\ItemFactory::getInstance()->get(266, 0, 12);
             if($inv->contains($item)){
-                $inv->removeItem(Item::get(266, 0, 12));
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(266, 0, 12));
                 $sender->getArmorInventory()->clearAll();
-                $sender->getArmorInventory()->setLeggings(Item::get(308, 0, 1));
-                $sender->getArmorInventory()->setBoots(Item::get(309, 0, 1));
+                $sender->getArmorInventory()->setLeggings(\pocketmine\item\ItemFactory::getInstance()->get(308, 0, 1));
+                $sender->getArmorInventory()->setBoots(\pocketmine\item\ItemFactory::getInstance()->get(309, 0, 1));
                 $sender->sendMessage("§aYou bought §ePermanen armor iron §afor §612 Gold");
-                $sender->getLevel()->addSound(new PopSound($sender));
+                $sender->getWorld()->addSound(new PopSound($sender));
             }else{
                 $sender->sendMessage("§cYour gold not enough");
-                $sender->getLevel()->addSound(new EndermanTeleportSound($sender));
+                $sender->getWorld()->addSound(new EndermanTeleportSound($sender));
             }
         }
         //Permanen Armor Diamond
         if($item->getId() == 313 && $item->getDamage() == 0){
             $inv = $sender->getInventory();
-            $item = Item::get(388, 0, 6);
+            $item = \pocketmine\item\ItemFactory::getInstance()->get(388, 0, 6);
             if($inv->contains($item)){
-                $inv->removeItem(Item::get(388, 0, 6));
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(388, 0, 6));
                 $sender->getArmorInventory()->clearAll();
-                $sender->getArmorInventory()->setLeggings(Item::get(312, 0, 1));
-                $sender->getArmorInventory()->setBoots(Item::get(313, 0, 1));
+                $sender->getArmorInventory()->setLeggings(\pocketmine\item\ItemFactory::getInstance()->get(312, 0, 1));
+                $sender->getArmorInventory()->setBoots(\pocketmine\item\ItemFactory::getInstance()->get(313, 0, 1));
                 $sender->sendMessage("§aYou bought §ePermanen armor diamond §afor §26 Emerald");
-                $sender->getLevel()->addSound(new PopSound($sender));
+                $sender->getWorld()->addSound(new PopSound($sender));
             }else{
                 $sender->sendMessage("§cYour emerald not enough");
-                $sender->getLevel()->addSound(new EndermanTeleportSound($sender));
+                $sender->getWorld()->addSound(new EndermanTeleportSound($sender));
             }
         }
         //End Armor Zone
@@ -937,85 +937,85 @@ class GameListener implements Listener
         //Permanen Shears
         if($item->getId() == 359 && $item->getDamage() == 0){
             $inv = $sender->getInventory();
-            $item = Item::get(265, 0, 20);
+            $item = \pocketmine\item\ItemFactory::getInstance()->get(265, 0, 20);
             if($inv->contains($item)){
-                $inv->removeItem(Item::get(265, 0, 20));
-                $inv->addItem(Item::get(359, 0, 1));
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(265, 0, 20));
+                $inv->addItem(\pocketmine\item\ItemFactory::getInstance()->get(359, 0, 1));
                 $sender->sendMessage("§aYou bought §ePermanen shears §afor §f20 Iron");
-                $sender->getLevel()->addSound(new PopSound($sender));
+                $sender->getWorld()->addSound(new PopSound($sender));
             }else{
                 $sender->sendMessage("§cYour iron not enough");
-                $sender->getLevel()->addSound(new EndermanTeleportSound($sender));
+                $sender->getWorld()->addSound(new EndermanTeleportSound($sender));
             }
         }
         //Wood Pickaxe
         if($item->getId() == 270 && $item->getDamage() == 0){
             $inv = $sender->getInventory();
-            $item = Item::get(265, 0, 10);
+            $item = \pocketmine\item\ItemFactory::getInstance()->get(265, 0, 10);
             if($inv->contains($item)){
-                $inv->removeItem(Item::get(265, 0, 10));
-                $inv->addItem(Item::get(270, 0, 1));
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(265, 0, 10));
+                $inv->addItem(\pocketmine\item\ItemFactory::getInstance()->get(270, 0, 1));
                 $sender->sendMessage("§aYou bought §eWood pickaxe §afor §f10 Iron");
-                $sender->getLevel()->addSound(new PopSound($sender));
+                $sender->getWorld()->addSound(new PopSound($sender));
             }else{
                 $sender->sendMessage("§cYour iron not enough");
-                $sender->getLevel()->addSound(new EndermanTeleportSound($sender));
+                $sender->getWorld()->addSound(new EndermanTeleportSound($sender));
             }
         }
         //Stone Pickaxe
         if($item->getId() == 274 && $item->getDamage() == 1){
             $inv = $sender->getInventory();
-            $item = Item::get(265, 0, 20);
+            $item = \pocketmine\item\ItemFactory::getInstance()->get(265, 0, 20);
             if($inv->contains($item)){
-                $inv->removeItem(Item::get(265, 0, 20));
-                $inv->addItem(Item::get(274, 0, 1));
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(265, 0, 20));
+                $inv->addItem(\pocketmine\item\ItemFactory::getInstance()->get(274, 0, 1));
                 $sender->sendMessage("§aYou bought §e16x §afor §f20 Iron");
-                $sender->getLevel()->addSound(new PopSound($sender));
+                $sender->getWorld()->addSound(new PopSound($sender));
             }else{
                 $sender->sendMessage("§cYour iron not enough");
-                $sender->getLevel()->addSound(new EndermanTeleportSound($sender));
+                $sender->getWorld()->addSound(new EndermanTeleportSound($sender));
             }
         }
         //Iron Pickaxe
         if($item->getId() == 257 && $item->getDamage() == 0){
             $inv = $sender->getInventory();
-            $item = Item::get(266, 0, 10);
+            $item = \pocketmine\item\ItemFactory::getInstance()->get(266, 0, 10);
             if($inv->contains($item)){
-                $inv->removeItem(Item::get(266, 0, 10));
-                $inv->addItem(Item::get(257, 0, 1));
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(266, 0, 10));
+                $inv->addItem(\pocketmine\item\ItemFactory::getInstance()->get(257, 0, 1));
                 $sender->sendMessage("§aYou bought §eIron pickaxe §afor §610 Gold");
-                $sender->getLevel()->addSound(new PopSound($sender));
+                $sender->getWorld()->addSound(new PopSound($sender));
             }else{
                 $sender->sendMessage("§cYour gold not enough");
-                $sender->getLevel()->addSound(new EndermanTeleportSound($sender));
+                $sender->getWorld()->addSound(new EndermanTeleportSound($sender));
             }
         }
         //Diamond Pickaxe
         if($item->getId() == 278 && $item->getDamage() == 0){
             $inv = $sender->getInventory();
-            $item = Item::get(266, 0, 15);
+            $item = \pocketmine\item\ItemFactory::getInstance()->get(266, 0, 15);
             if($inv->contains($item)){
-                $inv->removeItem(Item::get(266, 0, 15));
-                $inv->addItem(Item::get(278, 0, 1));
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(266, 0, 15));
+                $inv->addItem(\pocketmine\item\ItemFactory::getInstance()->get(278, 0, 1));
                 $sender->sendMessage("§aYou bought §eDiamond pickaxe §afor §615 Gold");
-                $sender->getLevel()->addSound(new PopSound($sender));
+                $sender->getWorld()->addSound(new PopSound($sender));
             }else{
                 $sender->sendMessage("§cYour gold not enough");
-                $sender->getLevel()->addSound(new EndermanTeleportSound($sender));
+                $sender->getWorld()->addSound(new EndermanTeleportSound($sender));
             }
         }
         //Diamond Axe
         if($item->getId() == 279 && $item->getDamage() == 0){
             $inv = $sender->getInventory();
-            $item = Item::get(266, 0, 12);
+            $item = \pocketmine\item\ItemFactory::getInstance()->get(266, 0, 12);
             if($inv->contains($item)){
-                $inv->removeItem(Item::get(266, 0, 12));
-                $inv->addItem(Item::get(279, 0, 1));
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(266, 0, 12));
+                $inv->addItem(\pocketmine\item\ItemFactory::getInstance()->get(279, 0, 1));
                 $sender->sendMessage("§aYou bought §eDiamond axe §afor §612 Gold");
-                $sender->getLevel()->addSound(new PopSound($sender));
+                $sender->getWorld()->addSound(new PopSound($sender));
             }else{
                 $sender->sendMessage("§cYour gold not enough");
-                $sender->getLevel()->addSound(new EndermanTeleportSound($sender));
+                $sender->getWorld()->addSound(new EndermanTeleportSound($sender));
             }
         }
         //End Tools Zone
@@ -1025,68 +1025,68 @@ class GameListener implements Listener
         //Arrow
         if($item->getId() == 262 && $item->getDamage() == 0){
             $inv = $sender->getInventory();
-            $item = Item::get(266, 0, 2);
+            $item = \pocketmine\item\ItemFactory::getInstance()->get(266, 0, 2);
             if($inv->contains($item)){
-                $inv->removeItem(Item::get(266, 0, 2));
-                $inv->addItem(Item::get(262, 0, 8));
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(266, 0, 2));
+                $inv->addItem(\pocketmine\item\ItemFactory::getInstance()->get(262, 0, 8));
                 $sender->sendMessage("§aYou bought §eBow §afor §62 Gold");
-                $sender->getLevel()->addSound(new PopSound($sender));
+                $sender->getWorld()->addSound(new PopSound($sender));
             }else{
                 $sender->sendMessage("§cYour gold not enough");
-                $sender->getLevel()->addSound(new EndermanTeleportSound($sender));
+                $sender->getWorld()->addSound(new EndermanTeleportSound($sender));
             }
         }
         //Bow
         if($item->getId() == 261 && $item->getDamage() == 1){
             $inv = $sender->getInventory();
-            $item = Item::get(266, 0, 12);
+            $item = \pocketmine\item\ItemFactory::getInstance()->get(266, 0, 12);
             if($inv->contains($item)){
-                $inv->removeItem(Item::get(266, 0, 12));
-                $inv->addItem(Item::get(261, 0, 1));
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(266, 0, 12));
+                $inv->addItem(\pocketmine\item\ItemFactory::getInstance()->get(261, 0, 1));
                 $sender->sendMessage("§aYou bought §eBow §afor §612 Gold");
-                $sender->getLevel()->addSound(new PopSound($sender));
+                $sender->getWorld()->addSound(new PopSound($sender));
             }else{
                 $sender->sendMessage("§cYour gold not enough");
-                $sender->getLevel()->addSound(new EndermanTeleportSound($sender));
+                $sender->getWorld()->addSound(new EndermanTeleportSound($sender));
             }
         }
         //Bow Power I
         if($item->getId() == 261 && $item->getDamage() == 2){
             $inv = $sender->getInventory();
-            $item = Item::get(266, 0, 24);
+            $item = \pocketmine\item\ItemFactory::getInstance()->get(266, 0, 24);
             if($inv->contains($item)){
-                $inv->removeItem(Item::get(266, 0, 24));
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(266, 0, 24));
                 $power = Enchantment::getEnchantment(19);
                 $powerIns = new EnchantmentInstance($power, 1);
-                $bowpower = Item::get(261, 0, 1);
+                $bowpower = \pocketmine\item\ItemFactory::getInstance()->get(261, 0, 1);
                 $bowpower->addEnchantment($powerIns);
                 $inv->addItem($bowpower);
                 $sender->sendMessage("§aYou bought §eBow power I §afor §624 Gold");
-                $sender->getLevel()->addSound(new PopSound($sender));
+                $sender->getWorld()->addSound(new PopSound($sender));
             }else{
                 $sender->sendMessage("§cYour gold not enough");
-                $sender->getLevel()->addSound(new EndermanTeleportSound($sender));
+                $sender->getWorld()->addSound(new EndermanTeleportSound($sender));
             }
         }
         //Bow Power I Punch I
         if($item->getId() == 261 && $item->getDamage() == 3){
             $inv = $sender->getInventory();
-            $item = Item::get(388, 0, 5);
+            $item = \pocketmine\item\ItemFactory::getInstance()->get(388, 0, 5);
             if($inv->contains($item)){
-                $inv->removeItem(Item::get(388, 0, 5));
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(388, 0, 5));
                 $power = Enchantment::getEnchantment(19);
                 $punch = Enchantment::getEnchantment(20);
                 $powerIns = new EnchantmentInstance($power, 1);
                 $punchIns = new EnchantmentInstance($punch, 1);
-                $bowpower = Item::get(261, 0, 1);
+                $bowpower = \pocketmine\item\ItemFactory::getInstance()->get(261, 0, 1);
                 $bowpower->addEnchantment($powerIns);
                 $bowpower->addEnchantment($punchIns);
                 $inv->addItem($bowpower);
                 $sender->sendMessage("§aYou bought §eBow power I punch I §afor §25 Emerald");
-                $sender->getLevel()->addSound(new PopSound($sender));
+                $sender->getWorld()->addSound(new PopSound($sender));
             }else{
                 $sender->sendMessage("§cYour emerald not enough");
-                $sender->getLevel()->addSound(new EndermanTeleportSound($sender));
+                $sender->getWorld()->addSound(new EndermanTeleportSound($sender));
             }
         }
         //End Bow Zone
@@ -1096,43 +1096,43 @@ class GameListener implements Listener
         //Potion Speed
         if($item->getId() == 373 && $item->getDamage() == 14){
             $inv = $sender->getInventory();
-            $item = Item::get(388, 0, 1);
+            $item = \pocketmine\item\ItemFactory::getInstance()->get(388, 0, 1);
             if($inv->contains($item)){
-                $inv->removeItem(Item::get(388, 0, 1));
-                $inv->addItem(Item::get(373, 14, 1));
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(388, 0, 1));
+                $inv->addItem(\pocketmine\item\ItemFactory::getInstance()->get(373, 14, 1));
                 $sender->sendMessage("§aYou bought §ePotion speed §afor §21 Emerald");
-                $sender->getLevel()->addSound(new PopSound($sender));
+                $sender->getWorld()->addSound(new PopSound($sender));
             }else{
                 $sender->sendMessage("§cYour emerald not enough");
-                $sender->getLevel()->addSound(new EndermanTeleportSound($sender));
+                $sender->getWorld()->addSound(new EndermanTeleportSound($sender));
             }
         }
         //Potion Jump
         if($item->getId() == 373 && $item->getDamage() == 9){
             $inv = $sender->getInventory();
-            $item = Item::get(388, 0, 1);
+            $item = \pocketmine\item\ItemFactory::getInstance()->get(388, 0, 1);
             if($inv->contains($item)){
-                $inv->removeItem(Item::get(388, 0, 1));
-                $inv->addItem(Item::get(373, 9, 1));
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(388, 0, 1));
+                $inv->addItem(\pocketmine\item\ItemFactory::getInstance()->get(373, 9, 1));
                 $sender->sendMessage("§aYou bought §ePotion jump §afor §21 Emerald");
-                $sender->getLevel()->addSound(new PopSound($sender));
+                $sender->getWorld()->addSound(new PopSound($sender));
             }else{
                 $sender->sendMessage("§cYour emerald not enough");
-                $sender->getLevel()->addSound(new EndermanTeleportSound($sender));
+                $sender->getWorld()->addSound(new EndermanTeleportSound($sender));
             }
         }
         //Potion Invisible
         if($item->getId() == 373 && $item->getDamage() == 7){
             $inv = $sender->getInventory();
-            $item = Item::get(388, 0, 2);
+            $item = \pocketmine\item\ItemFactory::getInstance()->get(388, 0, 2);
             if($inv->contains($item)){
-                $inv->removeItem(Item::get(388, 0, 2));
-                $inv->addItem(Item::get(373, 7, 1));
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(388, 0, 2));
+                $inv->addItem(\pocketmine\item\ItemFactory::getInstance()->get(373, 7, 1));
                 $sender->sendMessage("§aYou bought §ePotion invisible §afor §22 Emerald");
-                $sender->getLevel()->addSound(new PopSound($sender));
+                $sender->getWorld()->addSound(new PopSound($sender));
             }else{
                 $sender->sendMessage("§cYour emerald not enough");
-                $sender->getLevel()->addSound(new EndermanTeleportSound($sender));
+                $sender->getWorld()->addSound(new EndermanTeleportSound($sender));
             }
         }
         //End Potion Zone
@@ -1142,127 +1142,127 @@ class GameListener implements Listener
         //Golden Apple
         if($item->getId() == 322 && $item->getDamage() == 0){
             $inv = $sender->getInventory();
-            $item = Item::get(266, 0, 3);
+            $item = \pocketmine\item\ItemFactory::getInstance()->get(266, 0, 3);
             if($inv->contains($item)){
-                $inv->removeItem(Item::get(266, 0, 3));
-                $inv->addItem(Item::get(322, 0, 1));
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(266, 0, 3));
+                $inv->addItem(\pocketmine\item\ItemFactory::getInstance()->get(322, 0, 1));
                 $sender->sendMessage("§aYou bought §eGolden apple §afor §612 Gold");
-                $sender->getLevel()->addSound(new PopSound($sender));
+                $sender->getWorld()->addSound(new PopSound($sender));
             }else{
                 $sender->sendMessage("§cYour gold not enough");
-                $sender->getLevel()->addSound(new EndermanTeleportSound($sender));
+                $sender->getWorld()->addSound(new EndermanTeleportSound($sender));
             }
         }
         //BedBug
         if($item->getId() == 332 && $item->getDamage() == 0){
             $inv = $sender->getInventory();
-            $item = Item::get(265, 0, 40);
+            $item = \pocketmine\item\ItemFactory::getInstance()->get(265, 0, 40);
             if($inv->contains($item)){
-                $inv->removeItem(Item::get(265, 0, 40));
-                $inv->addItem(Item::get(332, 0, 1));
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(265, 0, 40));
+                $inv->addItem(\pocketmine\item\ItemFactory::getInstance()->get(332, 0, 1));
                 $sender->sendMessage("§aYou bought §eBedbug §afor §f40 Iron");
-                $sender->getLevel()->addSound(new PopSound($sender));
+                $sender->getWorld()->addSound(new PopSound($sender));
             }else{
                 $sender->sendMessage("§cYour iron not enough");
-                $sender->getLevel()->addSound(new EndermanTeleportSound($sender));
+                $sender->getWorld()->addSound(new EndermanTeleportSound($sender));
             }
         }
         //Dream Defender
         if($item->getId() == 383 && $item->getDamage() == 95){
             $inv = $sender->getInventory();
-            $item = Item::get(265, 0, 120);
+            $item = \pocketmine\item\ItemFactory::getInstance()->get(265, 0, 120);
             if($inv->contains($item)){
-                $inv->removeItem(Item::get(265, 0, 120));
-                $inv->addItem(Item::get(383, 95, 1));
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(265, 0, 120));
+                $inv->addItem(\pocketmine\item\ItemFactory::getInstance()->get(383, 95, 1));
                 $sender->sendMessage("§aYou bought §eDream defender §afor §f120 Iron");
-                $sender->getLevel()->addSound(new PopSound($sender));
+                $sender->getWorld()->addSound(new PopSound($sender));
             }else{
                 $sender->sendMessage("§cYour iron not enough");
-                $sender->getLevel()->addSound(new EndermanTeleportSound($sender));
+                $sender->getWorld()->addSound(new EndermanTeleportSound($sender));
             }
         }
         //Fireball
         if($item->getId() == 385 && $item->getDamage() == 0){
             $inv = $sender->getInventory();
-            $item = Item::get(265, 0, 40);
+            $item = \pocketmine\item\ItemFactory::getInstance()->get(265, 0, 40);
             if($inv->contains($item)){
-                $inv->removeItem(Item::get(265, 0, 40));
-                $inv->addItem(Item::get(385, 0, 1));
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(265, 0, 40));
+                $inv->addItem(\pocketmine\item\ItemFactory::getInstance()->get(385, 0, 1));
                 $sender->sendMessage("§aYou bought §eFireball §afor §f12 Iron");
-                $sender->getLevel()->addSound(new PopSound($sender));
+                $sender->getWorld()->addSound(new PopSound($sender));
             }else{
                 $sender->sendMessage("§cYour iron not enough");
-                $sender->getLevel()->addSound(new EndermanTeleportSound($sender));
+                $sender->getWorld()->addSound(new EndermanTeleportSound($sender));
             }
         }
         //TNT
         if($item->getId() == 46 && $item->getDamage() == 0){
             $inv = $sender->getInventory();
-            $item = Item::get(266, 0, 4);
+            $item = \pocketmine\item\ItemFactory::getInstance()->get(266, 0, 4);
             if($inv->contains($item)){
-                $inv->removeItem(Item::get(266, 0, 4));
-                $inv->addItem(Item::get(46, 0, 1));
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(266, 0, 4));
+                $inv->addItem(\pocketmine\item\ItemFactory::getInstance()->get(46, 0, 1));
                 $sender->sendMessage("§aYou bought §eTNT §afor §64 Gold");
-                $sender->getLevel()->addSound(new PopSound($sender));
+                $sender->getWorld()->addSound(new PopSound($sender));
             }else{
                 $sender->sendMessage("§cYour gold not enough");
-                $sender->getLevel()->addSound(new EndermanTeleportSound($sender));
+                $sender->getWorld()->addSound(new EndermanTeleportSound($sender));
             }
         }
         //Ender Pearl
         if($item->getId() == 368 && $item->getDamage() == 0){
             $inv = $sender->getInventory();
-            $item = Item::get(388, 0, 4);
+            $item = \pocketmine\item\ItemFactory::getInstance()->get(388, 0, 4);
             if($inv->contains($item)){
-                $inv->removeItem(Item::get(388, 0, 4));
-                $inv->addItem(Item::get(368, 0, 1));
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(388, 0, 4));
+                $inv->addItem(\pocketmine\item\ItemFactory::getInstance()->get(368, 0, 1));
                 $sender->sendMessage("§aYou bought §e1Ender pearl §afor §f12 Emerald");
-                $sender->getLevel()->addSound(new PopSound($sender));
+                $sender->getWorld()->addSound(new PopSound($sender));
             }else{
                 $sender->sendMessage("§cYour emerald not enough");
-                $sender->getLevel()->addSound(new EndermanTeleportSound($sender));
+                $sender->getWorld()->addSound(new EndermanTeleportSound($sender));
             }
         }
         //Player Tracker
         if($item->getId() == 345 && $item->getDamage() == 0){
             $inv = $sender->getInventory();
-            $item = Item::get(452, 0, 24);
+            $item = \pocketmine\item\ItemFactory::getInstance()->get(452, 0, 24);
             if($inv->contains($item)){
-                $inv->removeItem(Item::get(452, 0, 24));
-                $inv->addItem(Item::get(345, 0, 1));
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(452, 0, 24));
+                $inv->addItem(\pocketmine\item\ItemFactory::getInstance()->get(345, 0, 1));
                 $sender->sendMessage("§aYou bought §ePlayer tracker §afor §23 Emerald");
-                $sender->getLevel()->addSound(new PopSound($sender));
+                $sender->getWorld()->addSound(new PopSound($sender));
             }else{
                 $sender->sendMessage("§cThis item on progres");
-                $sender->getLevel()->addSound(new EndermanTeleportSound($sender));
+                $sender->getWorld()->addSound(new EndermanTeleportSound($sender));
             }
         }
         //Bridge Egg
         if($item->getId() == 344 && $item->getDamage() == 0){
             $inv = $sender->getInventory();
-            $item = Item::get(388, 0, 2);
+            $item = \pocketmine\item\ItemFactory::getInstance()->get(388, 0, 2);
             if($inv->contains($item)){
-                $inv->removeItem(Item::get(388, 0, 4));
-                $inv->addItem(Item::get(344, 0, 1));
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(388, 0, 4));
+                $inv->addItem(\pocketmine\item\ItemFactory::getInstance()->get(344, 0, 1));
                 $sender->sendMessage("§aYou bought §eBridge egg §afor §22 Emerald");
-                $sender->getLevel()->addSound(new PopSound($sender));
+                $sender->getWorld()->addSound(new PopSound($sender));
             }else{
                 $sender->sendMessage("§cYour emerald not enough");
-                $sender->getLevel()->addSound(new EndermanTeleportSound($sender));
+                $sender->getWorld()->addSound(new EndermanTeleportSound($sender));
             }
         }
         //Magic Milk
         if($item->getId() == 335 && $item->getDamage() == 0){
             $inv = $sender->getInventory();
-            $item = Item::get(266, 0, 4);
+            $item = \pocketmine\item\ItemFactory::getInstance()->get(266, 0, 4);
             if($inv->contains($item)){
-                $inv->removeItem(Item::get(266, 0, 4));
-                $inv->addItem(Item::get(335, 0, 1));
+                $inv->removeItem(\pocketmine\item\ItemFactory::getInstance()->get(266, 0, 4));
+                $inv->addItem(\pocketmine\item\ItemFactory::getInstance()->get(335, 0, 1));
                 $sender->sendMessage("§aYou bought §eMagick milk §afor §64 Gold");
-                $sender->getLevel()->addSound(new PopSound($sender));
+                $sender->getWorld()->addSound(new PopSound($sender));
             }else{
                 $sender->sendMessage("§cYour gold not enough");
-                $sender->getLevel()->addSound(new EndermanTeleportSound($sender));
+                $sender->getWorld()->addSound(new EndermanTeleportSound($sender));
             }
         }
     }
@@ -1273,9 +1273,9 @@ class GameListener implements Listener
 		foreach ($this->plugin->games as $game) {
 
 			if ($game->getState() == Game::STATE_LOBBY) {
-				$event->setCancelled(true);
+				$event->cancel();
 			} else {
-				$event->setCancelled(false);
+				$event->uncancel();
 			}
 		}
 	}
@@ -1285,10 +1285,10 @@ class GameListener implements Listener
 		$player = $event->getPlayer();
 		foreach ($this->plugin->games as $game) {
 			if ($game->getState() == Game::STATE_LOBBY) {
-				$event->setCancelled(true);
+				$event->cancel();
 			}
 			if ($player->getGamemode() == 3) {
-				$event->setCancelled(true);
+				$event->cancel();
 			}
 		}
 	}
@@ -1305,19 +1305,19 @@ class GameListener implements Listener
 
 		if ($args[0] == '/fly' || isset($args[1]) && $args[1] == 'join') {
 			$player->sendMessage(TextFormat::RED . "You cannot run this in-game!");
-			$event->setCancelled();
+			$event->cancel();
 		}
 		if ($args[0] == '/hub' || isset($args[1]) && $args[1] == 'join') {
 			$player->sendMessage(TextFormat::RED . "You cannot run this in-game!");
-			$event->setCancelled();
+			$event->cancel();
 		}
 		if ($args[0] == '/kill' || isset($args[1]) && $args[1] == 'join') {
 			$player->sendMessage(TextFormat::RED . "You cannot run this in-game!");
-			$event->setCancelled();
+			$event->cancel();
 		}
 		if ($args[0] == '/bedwars quit' || isset($args[1]) && $args[1] == 'join') {
 			$player->sendMessage(TextFormat::RED . "You cannot run this in-game!");
-			$event->setCancelled();
+			$event->cancel();
 		}
 	}
 

@@ -66,7 +66,7 @@ class InvMenuHandler implements Listener{
 					$listener = $menu->getListener();
 
 					if(($listener !== null && !$listener($transaction->getSource(), $action->getSourceItem(), $action->getTargetItem(), $action)) || $menu->isReadonly()){
-						$event->setCancelled();
+						$event->cancel();
 						return;
 					}
 				}

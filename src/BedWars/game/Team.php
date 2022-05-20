@@ -4,7 +4,7 @@
 namespace BedWars\game;
 
 
-use pocketmine\Player;
+use pocketmine\player\Player;
 
 class Team
 {

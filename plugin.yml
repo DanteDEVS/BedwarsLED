@@ -1,6 +1,6 @@
 name: BedWars_Led
 version: 1.0.1
-api: 3.x.x
+api: 4.0.0
 main: BedWars\BedWars
 author: dctxdev & dantedevs
 description: a simple bedwars plugin

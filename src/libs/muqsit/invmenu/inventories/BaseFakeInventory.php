@@ -31,7 +31,7 @@ use pocketmine\math\Vector3;
 use pocketmine\nbt\NetworkLittleEndianNBTStream;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\BlockActorDataPacket;
-use pocketmine\Player;
+use pocketmine\player\Player;
 use pocketmine\Server;
 
 abstract class BaseFakeInventory extends ContainerInventory{
@@ -62,7 +62,7 @@ abstract class BaseFakeInventory extends ContainerInventory{
 
 	final public function send(Player $player, ?string $custom_name) : bool{
 		$position = $player->floor()->add(0, static::INVENTORY_HEIGHT, 0);
-		if($player->getLevel()->isInWorld($position->x, $position->y, $position->z)){
+		if($player->getWorld()->isInWorld($position->x, $position->y, $position->z)){
 			$this->sendFakeBlockData($player, $this->holder_data[$player->getId()] = new HolderData($position, $custom_name));
 			return true;
 		}
@@ -87,7 +87,7 @@ abstract class BaseFakeInventory extends ContainerInventory{
 	final public function onClose(Player $player) : void{
 		if(isset($this->holder_data[$id = $player->getId()])){
 			$pos = $this->holder_data[$id]->position;
-			if($player->getLevel()->isChunkLoaded($pos->x >> 4, $pos->z >> 4)){
+			if($player->getWorld()->isChunkLoaded($pos->x >> 4, $pos->z >> 4)){
 				$this->sendRealBlockData($player, $this->holder_data[$id]);
 			}
 			unset($this->holder_data[$id]);
@@ -147,6 +147,6 @@ abstract class BaseFakeInventory extends ContainerInventory{
 		$pk->y = $pos->y;
 		$pk->z = $pos->z;
 		$pk->namedtag = (new NetworkLittleEndianNBTStream())->write($nbt);
-		$player->sendDataPacket($pk);
+		$player->getNetworkSession()->sendDataPacket($pk);
 	}
 }

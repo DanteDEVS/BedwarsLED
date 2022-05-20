@@ -25,7 +25,7 @@ use pocketmine\network\mcpe\protocol\types\WindowTypes;
 class HopperInventory extends SingleBlockInventory{
 
 	public function getBlock() : Block{
-		return Block::get(Block::HOPPER_BLOCK);
+		return \pocketmine\block\BlockFactory::getInstance()->get(\pocketmine\block\BlockLegacyIds::HOPPER_BLOCK, 0);
 	}
 
 	public function getNetworkType() : int{

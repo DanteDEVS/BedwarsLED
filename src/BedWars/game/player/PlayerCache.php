@@ -3,8 +3,8 @@
 
 namespace BedWars\game\player;
 
-use pocketmine\Player;
-use pocketmine\level\Position;
+use pocketmine\player\Player;
+use pocketmine\world\Position;
 use pocketmine\entity\EffectInstance;
 
 
@@ -33,9 +33,9 @@ class PlayerCache
         $this->inventoryContents = $player->getInventory()->getContents();
         $this->health = $player->getHealth();
         $this->maxHealth = $player->getMaxHealth();
-        $this->food = $player->getMaxFood();
+        $this->food = $player->getHungerManager()->getMaxFood();
         $this->position = $player->asPosition();
-        $this->effects = $player->getEffects();
+        $this->effects = $player->getEffects()->all();
     }
 
     public function load(): void {
@@ -44,10 +44,10 @@ class PlayerCache
 			$this->player->getInventory()->setContents($this->inventoryContents);
 			$this->player->setHealth($this->health);
 			$this->player->setMaxHealth($this->maxHealth);
-			$this->player->setFood($this->food);
+			$this->player->getHungerManager()->setFood($this->food);
 			$this->player->teleport($this->position);
 			foreach ($this->effects as $effect) {
-				$this->player->addEffect($effect);
+				$this->player->getEffects()->all()->add($effect);
 			}
 		}
     }
