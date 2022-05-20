@@ -7,8 +7,8 @@ use BedWars\game\entity\FakeItemEntity;
 use BedWars\utils\Utils;
 use pocketmine\entity\Entity;
 use pocketmine\item\Item;
-use pocketmine\level\particle\FloatingTextParticle;
-use pocketmine\level\Position;
+use pocketmine\world\particle\FloatingTextParticle;
+use pocketmine\world\Position;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\ByteArrayTag;
 use pocketmine\nbt\tag\CompoundTag;
@@ -20,12 +20,12 @@ class Generator extends Vector3
 {
 
 	const TITLE = [
-		Item::DIAMOND => TextFormat::BOLD . TextFormat::AQUA . "Diamond",
-		Item::EMERALD => TextFormat::BOLD . TextFormat::GREEN . "Emerald"
+		\pocketmine\item\ItemIds::DIAMOND => TextFormat::BOLD . TextFormat::AQUA . "Diamond",
+		\pocketmine\item\ItemIds::EMERALD => TextFormat::BOLD . TextFormat::GREEN . "Emerald"
 	];
 	const FAKE_BLOCK = [
-		Item::DIAMOND => Item::DIAMOND_BLOCK,
-		Item::EMERALD => Item::EMERALD_BLOCK
+		\pocketmine\item\ItemIds::DIAMOND => \pocketmine\item\ItemIds::DIAMOND_BLOCK,
+		\pocketmine\item\ItemIds::EMERALD => \pocketmine\item\ItemIds::EMERALD_BLOCK
 	];
 	/** @var int $itemID */
 	public $itemID;
@@ -113,8 +113,8 @@ class Generator extends Vector3
 				TextFormat::YELLOW . "Spawn in " . TextFormat::RED . $this->dynamicSpawnTime;
 			$this->floatingText->setText($text);
 			foreach ($this->floatingText->encode() as $packet) {
-				foreach ($this->position->getLevel()->getPlayers() as $player) {
-					$player->dataPacket($packet);
+				foreach ($this->position->getWorld()->getPlayers() as $player) {
+					$player->getNetworkSession()->sendDataPacket($packet);
 				}
 			}
 		}
@@ -122,7 +122,7 @@ class Generator extends Vector3
 		if ($this->dynamicSpawnTime == 0) {
 			$this->dynamicSpawnTime = $this->repeatRate;
 			if ($this->activated){
-				$this->position->getLevel()->dropItem($this->position->asVector3(), Item::get($this->itemID));
+				$this->position->getWorld()->dropItem($this->position->getPosition()->asVector3(), \pocketmine\item\ItemFactory::getInstance()->get($this->itemID));
 			}
 		}
 

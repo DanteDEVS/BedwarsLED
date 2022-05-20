@@ -24,14 +24,14 @@ use libs\muqsit\invmenu\utils\HolderData;
 use pocketmine\block\Block;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\types\WindowTypes;
-use pocketmine\Player;
-use pocketmine\tile\Tile;
+use pocketmine\player\Player;
+use pocketmine\block\tile\Tile;
 
 abstract class SingleBlockInventory extends BaseFakeInventory{
 
 	protected function sendFakeBlockData(Player $player, HolderData $data) : void{
 		$block = $this->getBlock()->setComponents($data->position->x, $data->position->y, $data->position->z);
-		$player->getLevel()->sendBlocks([$player], [$block]);
+		$player->getWorld()->sendBlocks([$player], [$block]);
 
 		$tag = new CompoundTag();
 		if($data->custom_name !== null){
@@ -44,7 +44,7 @@ abstract class SingleBlockInventory extends BaseFakeInventory{
 	}
 
 	protected function sendRealBlockData(Player $player, HolderData $data) : void{
-		$player->getLevel()->sendBlocks([$player], [$data->position]);
+		$player->getWorld()->sendBlocks([$player], [$data->position]);
 	}
 
 	abstract public function getBlock() : Block;

@@ -14,7 +14,7 @@ use BedWars\Tasks\EntityUpdate;
 use pocketmine\entity\Entity;
 use pocketmine\item\Item;
 use pocketmine\math\Vector3;
-use pocketmine\Player;
+use pocketmine\player\Player;
 use pocketmine\plugin\PluginBase;
 use pocketmine\utils\Config;
 use pocketmine\utils\TextFormat;
@@ -33,10 +33,10 @@ class BedWars extends PluginBase
         "white" => "§f"
     ];
     public const GENERATOR_PRIORITIES = [
-        'gold' => ['item' => Item::GOLD_INGOT, 'spawnText' => false, 'spawnBlock' => false, 'refreshRate' => 13],
-        'iron' => ['item' => Item::IRON_INGOT, 'spawnText' => false, 'spawnBlock' => false, 'refreshRate' => 8],
-        'diamond' => ['item' => Item::DIAMOND, 'spawnText' => true, 'spawnBlock' => true, 'refreshRate' => 30],
-        'emerald' => ['item' => Item::EMERALD, 'spawnText' => true, 'spawnBlock' => true, 'refreshRate' => 60]
+        'gold' => ['item' => \pocketmine\item\ItemIds::GOLD_INGOT, 'spawnText' => false, 'spawnBlock' => false, 'refreshRate' => 13],
+        'iron' => ['item' => \pocketmine\item\ItemIds::IRON_INGOT, 'spawnText' => false, 'spawnBlock' => false, 'refreshRate' => 8],
+        'diamond' => ['item' => \pocketmine\item\ItemIds::DIAMOND, 'spawnText' => true, 'spawnBlock' => true, 'refreshRate' => 30],
+        'emerald' => ['item' => \pocketmine\item\ItemIds::EMERALD, 'spawnText' => true, 'spawnBlock' => true, 'refreshRate' => 60]
     ];
     public static $instance;
     /** @var Game[] $games */
@@ -64,19 +64,12 @@ class BedWars extends PluginBase
         return self::$instance;
     }
 
-    public function onEnable(): void
-    {
+    protected function onEnable(): void{
         self::$instance = $this;
         $this->saveDefaultConfig();
         $this->saveResource('kills.yml');
         $this->saveResource('wins.yml');
-        Entity::registerEntity(TopsEntitykill::class, true);
-        $this->loadEntitys();
-        $this->loadTasks();
-        $this->serverWebsite = $this->getConfig()->get('website');
-        $this->staticStartTime = (int)$this->getConfig()->get('start-time');
-        $this->staticRestartTime = (int)$this->getConfig()->get('restart-time');
-        Entity::registerEntity(FakeItemEntity::class, true);
+        \pocketmine\entity\EntityFactory::getInstance()->register(TopsEntitykill::class, fn($world, $nbt) => new TopsEntitykill(\pocketmine\entity\EntityDataHelper::parseLocation($nbt, $world), $nbt));
         @mkdir($concurrentDirectory = $this->getDataFolder() . "arenas");
         @mkdir($concurrentDirectory = $this->getDataFolder() . "skins");
 

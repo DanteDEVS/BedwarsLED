@@ -21,7 +21,7 @@ namespace libs\muqsit\invmenu\tasks;
 
 use libs\muqsit\invmenu\inventories\BaseFakeInventory;
 
-use pocketmine\Player;
+use pocketmine\player\Player;
 use pocketmine\scheduler\Task;
 
 class DelayedFakeBlockDataNotifyTask extends Task{

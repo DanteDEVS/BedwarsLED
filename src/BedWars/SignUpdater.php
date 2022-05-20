@@ -4,9 +4,9 @@
 namespace BedWars;
 
 use pocketmine\scheduler\Task;
-use pocketmine\level\Level;
+use pocketmine\world\World;
 use pocketmine\math\Vector3;
-use pocketmine\tile\Sign;
+use pocketmine\block\tile\Sign;
 use pocketmine\utils\TextFormat;
 
 class SignUpdater extends Task
@@ -23,14 +23,13 @@ class SignUpdater extends Task
     /**
      * @param int $currentTick
      */
-    public function onRun(int $currentTick) : void
-    {
+    public function onRun(): void {
         foreach ($this->plugin->signs as $arena => $positions) {
             foreach ($positions as $position) {
                 $pos = explode(":", $position);
                 $vector = new Vector3(intval($pos[0]), intval($pos[1]), intval($pos[2]));
 
-                $level = $this->plugin->getServer()->getLevelByName($pos[3]);
+                $level = $this->plugin->getServer()->getWorldManager()->getWorldByName($pos[3]);
 
                 if (!$level instanceof Level) {
                     continue;

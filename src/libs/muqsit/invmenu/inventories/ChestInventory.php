@@ -21,12 +21,12 @@ namespace libs\muqsit\invmenu\inventories;
 
 use pocketmine\block\Block;
 use pocketmine\network\mcpe\protocol\types\WindowTypes;
-use pocketmine\tile\Tile;
+use pocketmine\block\tile\Tile;
 
 class ChestInventory extends SingleBlockInventory{
 
 	public function getBlock() : Block{
-		return Block::get(Block::CHEST);
+		return \pocketmine\block\BlockFactory::getInstance()->get(\pocketmine\block\BlockLegacyIds::CHEST, 0);
 	}
 
 	public function getNetworkType() : int{

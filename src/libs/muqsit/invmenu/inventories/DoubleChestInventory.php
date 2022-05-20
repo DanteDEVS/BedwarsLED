@@ -24,8 +24,8 @@ use libs\muqsit\invmenu\utils\HolderData;
 use pocketmine\block\Block;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\types\WindowTypes;
-use pocketmine\Player;
-use pocketmine\tile\Tile;
+use pocketmine\player\Player;
+use pocketmine\block\tile\Tile;
 
 class DoubleChestInventory extends BaseFakeInventory{
 
@@ -41,10 +41,10 @@ class DoubleChestInventory extends BaseFakeInventory{
 	}
 
 	protected function sendFakeBlockData(Player $player, HolderData $data) : void{
-		$block = Block::get(Block::CHEST)->setComponents($data->position->x, $data->position->y, $data->position->z);
-		$block2 = Block::get(Block::CHEST)->setComponents($data->position->x + 1, $data->position->y, $data->position->z);
+		$block = \pocketmine\block\BlockFactory::getInstance()->get(\pocketmine\block\BlockLegacyIds::CHEST, 0)->setComponents($data->position->x, $data->position->y, $data->position->z);
+		$block2 = \pocketmine\block\BlockFactory::getInstance()->get(\pocketmine\block\BlockLegacyIds::CHEST, 0)->setComponents($data->position->x + 1, $data->position->y, $data->position->z);
 
-		$player->getLevel()->sendBlocks([$player], [$block, $block2]);
+		$player->getWorld()->sendBlocks([$player], [$block, $block2]);
 
 		$tag = new CompoundTag();
 		if($data->custom_name !== null){
@@ -63,7 +63,7 @@ class DoubleChestInventory extends BaseFakeInventory{
 	}
 
 	protected function sendRealBlockData(Player $player, HolderData $data) : void{
-		$player->getLevel()->sendBlocks([$player], [$data->position, $data->position->add(1, 0, 0)]);
+		$player->getWorld()->sendBlocks([$player], [$data->position, $data->position->add(1, 0, 0)]);
 	}
 
 	public function getNetworkType() : int{

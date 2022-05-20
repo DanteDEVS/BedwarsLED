@@ -1,7 +1,4 @@
-
 <?php
-
-
 namespace BedWars\command;
 
 
@@ -11,8 +8,8 @@ use BedWars\utils\Utils;
 use pocketmine\block\Block;
 use pocketmine\command\CommandSender;
 use pocketmine\command\PluginCommand;
-use pocketmine\level\Level;
-use pocketmine\Player;
+use pocketmine\world\World;
+use pocketmine\player\Player;
 use pocketmine\utils\Config;
 use pocketmine\utils\TextFormat;
 
@@ -60,7 +57,7 @@ class DefaultCommand extends PluginCommand
 			switch (strtolower($args[0])) {
 				case "list";
 					$sender->sendMessage(TextFormat::BOLD . TextFormat::DARK_RED . "Arena List");
-					foreach ($this->getPlugin()->game as $game) {
+					foreach ($this->getPlugin()->Game as $game) {
 						$sender->sendMessage(TextFormat::GRAY . "- " . TextFormat::GREEN . $game->getName() . " [" . count($game->players) . "/" . $game->getMaxPlayers() . "]");
 					}
 					break;
@@ -76,7 +73,7 @@ class DefaultCommand extends PluginCommand
 					}
 
 					$gameName = $args[1];
-					if (array_key_exists($gameName, $this->getPlugin()->game)) {
+					if (array_key_exists($gameName, $this->getPlugin()->Game)) {
 						$sender->sendMessage(BedWars::PREFIX . TextFormat::YELLOW . "Game called " . $gameName . " already exists!");
 						return;
 					}
@@ -147,13 +144,13 @@ class DefaultCommand extends PluginCommand
 					}
 
 					$gameName = $args[1];
-					if (!in_array($gameName, array_keys($this->getPlugin()->game))) {
+					if (!in_array($gameName, array_keys($this->getPlugin()->Game))) {
 						$sender->sendMessage(BedWars::PREFIX . TextFormat::YELLOW . "Game called " . $gameName . " doesn't exist!");
 						return;
 					}
 
 					//close the arena if it's running
-					$gameObject = $this->getPlugin()->game[$gameName];
+					$gameObject = $this->getPlugin()->Game[$gameName];
 					if (!$gameObject instanceof Game) {
 						return; //wtf ??
 					}
@@ -190,7 +187,7 @@ class DefaultCommand extends PluginCommand
 							for ($z = 0; $z < 16; ++$z) {
 								for ($y = 0; $y < $void_y; ++$y) {
 									$block = $chunk->getBlockId($x, $y, $z);
-									if ($block !== Block::AIR) {
+									if ($block !== \pocketmine\block\BlockLegacyIds::AIR) {
 										$void_y = $y;
 										break;
 									}
@@ -203,7 +200,7 @@ class DefaultCommand extends PluginCommand
 					$fileContent = file_get_contents($location);
 					$jsonData = json_decode($fileContent, true, 512, JSON_THROW_ON_ERROR);
 					$positionData = [
-						'lobby' => $sender->getX() . ":" . $sender->getY() . ":" . $sender->getZ(),
+						'lobby' => $sender->getPosition()->getX() . ":" . $sender->getPosition()->getY() . ":" . $sender->getPosition()->getZ(),
 						'void_y' => $void_y
 					];
 
@@ -257,7 +254,7 @@ class DefaultCommand extends PluginCommand
 						return;
 					}
 
-					$jsonData['teamInfo'][$teamName][strtolower($args[3]) . "Pos"] = $sender->getX() . ":" . $sender->getY() . ":" . $sender->getZ();
+					$jsonData['teamInfo'][$teamName][strtolower($args[3]) . "Pos"] = $sender->getPosition()->getX() . ":" . $sender->getPosition()->getY() . ":" . $sender->getPosition()->getZ();
 
 					file_put_contents($location, json_encode($jsonData));
 					$sender->sendMessage(BedWars::PREFIX . TextFormat::GREEN . "Property updated");
@@ -369,21 +366,21 @@ class DefaultCommand extends PluginCommand
 									$sender->sendMessage('§aEntity established successfully.');
 									break;
 								case 'removegame':
-									foreach ($sender->getLevel()->getEntities() as $entity) {
+									foreach ($sender->getWorld()->getEntities() as $entity) {
 										if ($entity instanceof HumanEntity) {
 											$entity->kill();
 										}
 									}
 									break;
 								case 'removewins':
-									foreach ($sender->getLevel()->getEntities() as $entity) {
+									foreach ($sender->getWorld()->getEntities() as $entity) {
 										if ($entity instanceof TopsEntity) {
 											$entity->kill();
 										}
 									}
 									break;
 								case 'removekills':
-									foreach ($sender->getLevel()->getEntities() as $entity) {
+									foreach ($sender->getWorld()->getEntities() as $entity) {
 										if ($entity instanceof TopsEntitykill) {
 											$entity->kill();
 										}

@@ -13,9 +13,9 @@ class EntityUpdate extends Task
 
 	public function onRun(int $currentTick)
 	{
-		foreach (Server::getInstance()->getDefaultLevel()->getEntities() as $entity) {
+		foreach (Server::getInstance()->getWorldManager()->getDefaultWorld()->getEntities() as $entity) {
 			if ($entity instanceof HumanEntity) {
-				$entity->addEffect(new EffectInstance(Effect::getEffect(Effect::FIRE_RESISTANCE), 999));
+				$entity->getEffects()->all()->add(new EffectInstance(\pocketmine\data\bedrock\EffectIdMap::getInstance()->fromId(Effect::FIRE_RESISTANCE), 999));
 				$entity->setNameTag(self::setNameb());
 				$entity->setNameTagAlwaysVisible(true);
 				$entity->setScale(1.5);
@@ -43,8 +43,8 @@ class EntityUpdate extends Task
 	{
 		$totalPlayers = [];
 		foreach (GameListener::getAllArenas() as $arena) {
-			if (Server::getInstance()->getLevelByName($arena) !== null) {
-				foreach (Server::getInstance()->getLevelByName($arena)->getPlayers() as $player) {
+			if (Server::getInstance()->getWorldManager()->getWorldByName($arena) !== null) {
+				foreach (Server::getInstance()->getWorldManager()->getWorldByName($arena)->getPlayers() as $player) {
 					$totalPlayers[] = $player;
 				}
 			}
